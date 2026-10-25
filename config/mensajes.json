@@ -1,5 +1,5 @@
 {
-  "_comentario": "Plantillas de mensajes. 'whatsapp' es el nombre de la plantilla aprobada en Meta y 'parametros' el orden de sus variables {{1}}, {{2}}... 'comercial': true exige consentimiento para comunicaciones (art. 21 LSSI). Todas las plantillas comerciales deben ofrecer la baja.",
+  "_comentario": "Plantillas de mensajes. 'whatsapp' es el nombre de la plantilla aprobada en Meta y 'parametros' el orden de sus variables {{1}}, {{2}}... 'comercial': true exige consentimiento para comunicaciones (art. 21 LSSI). Todas las plantillas comerciales deben ofrecer la baja. 'excepcionClientes': true permite enviarla a clientes sin consentimiento expreso, al amparo de la relación contractual previa (art. 21.2 LSSI), siempre con la posibilidad de oponerse.",
   "bienvenida": {
     "comercial": false,
     "asunto": "Hemos recibido su consulta",
@@ -227,6 +227,28 @@
       "nombre",
       "novedad",
       "enlace_documentos"
+    ]
+  },
+  "valoracion_solicitud": {
+    "comercial": true,
+    "excepcionClientes": true,
+    "asunto": "¿Cómo le hemos atendido?",
+    "texto": "Hola {{nombre}}, su procedimiento ha terminado y nos gustaría conocer su opinión. Son dos minutos: {{enlace_valoracion}}. Si no desea recibir más mensajes, responda BAJA.",
+    "whatsapp": "lso_valoracion",
+    "parametros": [
+      "nombre",
+      "enlace_valoracion"
+    ]
+  },
+  "resena_recordatorio": {
+    "comercial": true,
+    "excepcionClientes": true,
+    "asunto": "Su opinión ayuda a otras personas",
+    "texto": "Hola {{nombre}}, si tiene un momento, su opinión en Google ayuda a otras personas en su situación a dar el paso: {{enlace_resena}}. Responda BAJA para no recibir más mensajes.",
+    "whatsapp": "lso_resena_recordatorio",
+    "parametros": [
+      "nombre",
+      "enlace_resena"
     ]
   }
 }

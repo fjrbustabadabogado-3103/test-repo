@@ -77,6 +77,18 @@
     }));
   }
 
+  async function cargarCierre() {
+    const { metricas: m, testimonios } = await api('/cierre');
+    const kpis = [
+      ['NPS', m.nps == null ? '—' : m.nps], ['Valoraciones', m.valoraciones], ['Clics en reseña', m.clicsResena],
+      ['Testimonios autorizados', m.testimoniosAutorizados], ['Leads recomendados', m.leadsReferidos], ['Clientes recomendados', m.clientesReferidos],
+    ];
+    $('kpis-cierre').replaceChildren(...kpis.map(([etiqueta, valor]) => el('div', { className: 'kpi' }, el('div', { className: 'valor', textContent: String(valor) }), el('div', { className: 'etiqueta', textContent: etiqueta }))));
+    $('testimonios').replaceChildren(...(testimonios.length
+      ? testimonios.map((t) => el('li', {}, `«${t.texto}» — `, el('strong', { textContent: t.firma }), el('span', { className: 'nota', textContent: ` · autorizado el ${t.autorizadoEl.slice(0, 10)}` })))
+      : [el('li', { textContent: 'Todavía no hay testimonios autorizados.' })]));
+  }
+
   async function cargarLeads() {
     const params = new URLSearchParams();
     if ($('filtro-semaforo').value) params.set('semaforo', $('filtro-semaforo').value);
@@ -233,7 +245,7 @@
   async function iniciar() {
     $('acceso').classList.add('oculto');
     $('app').classList.remove('oculto');
-    await Promise.all([cargarMetricas(), cargarLeads(), cargarPlazos()]);
+    await Promise.all([cargarMetricas(), cargarLeads(), cargarPlazos(), cargarCierre()]);
     if (leadActivo) await abrirLead(leadActivo).catch(() => {});
   }
 

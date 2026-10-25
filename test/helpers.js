@@ -78,3 +78,27 @@ export async function hastaCliente(e, { inicioInmediato = true, lead: datosLead 
   await e.procesar();
   return { lead: e.store.lead(lead.id), encargo: e.store.encargo(encargo.id), tokenEncargo: token };
 }
+
+export const PDF = Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << >>\n%%EOF\n');
+
+export async function hastaListo(e, opciones = {}) {
+  const { lead } = await hastaCliente(e, opciones);
+  const exp = e.store.expedienteDeLead(lead.id);
+  await e.app.inject({
+    method: 'POST', url: `/api/expedientes/${exp.token}/datos`,
+    payload: { domicilio: 'Calle Mayor 1, Madrid', estado_civil: 'soltero', situacion_laboral: 'asalariado', tiene_inmuebles: 'no', tiene_vehiculos: 'no', procedimientos_judiciales: 'no', causas: 'Despido.' },
+  });
+  for (const doc of e.store.documentosDeExpediente(exp.id).filter((d) => d.obligatorio && d.estado !== 'no_aplica')) {
+    await e.app.inject({ method: 'PUT', url: `/api/expedientes/${exp.token}/documentos/${doc.id}`, payload: PDF, headers: { 'content-type': 'application/pdf' } });
+    await e.admin('POST', `/documentos/${doc.id}/revision`, { decision: 'validar' });
+  }
+  const base = `/expedientes/${exp.id}`;
+  const a = (await e.admin('POST', `${base}/acreedores`, { nombre: 'Banco', tipo: 'financiera', importe: 9000, domicilio: 'Calle Banco 1', vencimiento: '2025-01-10' })).json();
+  await e.admin('PATCH', `/acreedores/${a.id}`, { revisado: true });
+  await e.admin('PUT', `${base}/preparacion`, { historia: 'Historia.', ruta: 'sin_masa', procurador: 'Dña. Procuradora' });
+  return { lead, expediente: exp, base };
+}
+
+/** Avisos al equipo programados cuyo texto contiene `texto`. */
+export const tareasEquipo = (e, texto) => e.store.db.prepare("SELECT datos FROM tareas WHERE tipo = 'aviso_equipo'").all()
+  .map((t) => JSON.parse(t.datos).extra?.evento ?? '').filter((ev) => ev.includes(texto));

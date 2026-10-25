@@ -7,6 +7,7 @@ import { ejecutarExtraccion } from '../modules/preparacion/preparacion.js';
 import { revisarPlazos, hoyEnZona } from '../modules/seguimiento/procedimientos.js';
 import { localAUtc } from '../modules/cualificacion/agenda.js';
 import { sumarDiasIso } from '../modules/seguimiento/calendario.js';
+import { enviarMensajeCierre, avisarFinConservacion } from '../modules/cierre/cierre.js';
 import { sumarDias, sumarMinutos } from '../util.js';
 
 const MAX_INTENTOS = 6;
@@ -81,6 +82,14 @@ function crearManejadores(ctx) {
       const alertas = revisarPlazos(ctx);
       ctx.store.programar('revisar_plazos', localAUtc(sumarDiasIso(hoyEnZona(ctx), 1), '08:00', ctx.config.agenda.zona));
       return `alertas:${alertas}`;
+    },
+
+    async cierre_mensaje(tarea, lead) {
+      return enviarMensajeCierre(ctx, tarea, lead);
+    },
+
+    async fin_conservacion(tarea) {
+      return avisarFinConservacion(ctx, tarea);
     },
 
     async purga_rgpd() {

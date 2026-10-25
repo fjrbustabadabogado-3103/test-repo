@@ -16,7 +16,7 @@ import {
 } from './modules/contratacion/encargos.js';
 import { cambiarEtapa } from './etapas.js';
 import { calcularMetricas } from './metricas.js';
-import { paginaEncargo, paginaPrivacidad, paginaMensaje, paginaExpediente } from './paginas.js';
+import { paginaEncargo, paginaPrivacidad, paginaMensaje, paginaExpediente, paginaValoracion } from './paginas.js';
 import { crearAlmacen } from './modules/documentos/almacen.js';
 import {
   abrirExpediente, expedienteParaCliente, resumenExpediente, guardarDatos, subirArchivo, eliminarArchivo, revisarDocumento, urlPortal,
@@ -27,6 +27,10 @@ import {
 import { crearClienteIa } from './modules/preparacion/extraccion.js';
 import { generarDocumento } from './modules/preparacion/documentos-word.js';
 import {
+  cierreParaCliente, vistaCliente, registrarValoracion, revocarTestimonio, registrarClicResena, archivarExpediente,
+  eliminarDocumentosExpediente, resumenCierre, metricasCierre, testimoniosAutorizados,
+} from './modules/cierre/cierre.js';
+import {
   resumenSeguimiento, actualizarDatosProcedimiento, registrarActuacion, marcarPlazo, agendaPlazos, seguimientoParaCliente,
   icsPlazos, claveCalendario, claveCalendarioValida,
 } from './modules/seguimiento/procedimientos.js';
@@ -34,7 +38,7 @@ import { igualSeguro, aCentimos, normalizarTelefono, fechaLarga, escaparHtml } f
 
 const PAGINAS_ESTATICAS = { '/admin': 'admin.html', '/admin/expediente/:id': 'admin-expediente.html' };
 const JS = 'text/javascript; charset=utf-8';
-const ESTATICOS = { 'estilos.css': 'text/css; charset=utf-8', 'landing.js': JS, 'admin.js': JS, 'reservar.js': JS, 'encargo.js': JS, 'expediente.js': JS, 'admin-expediente.js': JS };
+const ESTATICOS = { 'estilos.css': 'text/css; charset=utf-8', 'landing.js': JS, 'admin.js': JS, 'reservar.js': JS, 'encargo.js': JS, 'expediente.js': JS, 'admin-expediente.js': JS, 'valoracion.js': JS };
 const ETAPAS_MANUALES = ['contactado', 'cualificado', 'asistio', 'no_asistio', 'perdido', 'descartado', 'nuevo'];
 // Con hoja de encargo firmada, la etapa la gobiernan la firma, los pagos y el desistimiento.
 const ETAPAS_BLOQUEADAS = ['firmado', 'cliente', 'desistido'];
@@ -270,6 +274,34 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
     return { ...resumenExpediente(ctx, expediente), seguimiento: seguimientoParaCliente(ctx, expediente) };
   });
 
+  // ---------------- Módulo 7 · Valoración, reseñas y recomendaciones ----------------
+
+  app.get('/valoracion/:token', async (req, reply) => {
+    const cierre = ctx.store.cierrePorToken(req.params.token);
+    if (!cierre) return html(reply.code(404), paginaMensaje(config, 'Enlace no válido', 'Este enlace de valoración no existe.'));
+    return html(reply, paginaValoracion(ctx, cierre));
+  });
+
+  app.get('/api/valoracion/:token', async (req) => vistaCliente(ctx, cierreParaCliente(ctx, req.params.token)));
+
+  app.post('/api/valoracion/:token', async (req) => {
+    const vista = registrarValoracion(ctx, req.params.token, req.body, { ip: req.ip, userAgent: req.headers['user-agent'] });
+    ctx.worker.despertar();
+    return vista;
+  });
+
+  app.post('/api/valoracion/:token/revocar', async (req) => {
+    const vista = revocarTestimonio(ctx, req.params.token);
+    ctx.worker.despertar();
+    return vista;
+  });
+
+  app.get('/resena/:token', async (req, reply) => {
+    const url = registrarClicResena(ctx, req.params.token);
+    if (!url) return html(reply.code(404), paginaMensaje(config, 'Enlace no disponible', 'Gracias por su interés. El enlace para dejar su opinión no está disponible en este momento.'));
+    return reply.redirect(url);
+  });
+
   // ---------------- Módulo 6 · Calendario de plazos (suscripción desde Google Calendar u Outlook) ----------------
 
   app.get('/calendario/plazos.ics', async (req, reply) => {
@@ -431,6 +463,21 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
       plazos: agendaPlazos(ctx),
       calendario: `${config.baseUrl}/calendario/plazos.ics?clave=${claveCalendario(ctx)}`,
     }));
+
+    // ---- Módulo 7 · Cierre ----
+    admin.get('/expedientes/:id/cierre', async (req) => ({ cierre: resumenCierre(ctx, req.params.id) }));
+
+    admin.post('/expedientes/:id/archivar', async (req) => {
+      archivarExpediente(ctx, req.params.id);
+      return { cierre: resumenCierre(ctx, req.params.id) };
+    });
+
+    admin.post('/expedientes/:id/eliminar-documentos', async (req) => {
+      const resultado = await eliminarDocumentosExpediente(ctx, req.params.id);
+      return { ...resultado, cierre: resumenCierre(ctx, req.params.id) };
+    });
+
+    admin.get('/cierre', async () => ({ metricas: metricasCierre(ctx), testimonios: testimoniosAutorizados(ctx) }));
 
     admin.post('/documentos/:id/revision', async (req) => {
       const documento = revisarDocumento(ctx, req.params.id, { decision: req.body?.decision, motivo: req.body?.motivo });

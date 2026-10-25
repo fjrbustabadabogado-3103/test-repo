@@ -241,9 +241,50 @@
       el('strong', { textContent: a.titulo }), a.detalle ? ` · ${a.detalle}` : '')));
   }
 
+  async function cargarCierre() {
+    const { cierre } = await api(`/expedientes/${expedienteId}/cierre`);
+    const caja = $('cierre');
+    const resolucion = ['exoneracion_concedida', 'exoneracion_denegada'].includes(seguimiento?.procedimiento?.estado);
+    const hijos = [];
+    if (cierre) {
+      const motivos = { exoneracion_concedida: 'Exoneración concedida', exoneracion_denegada: 'Exoneración denegada', desistimiento: 'Desistimiento del cliente' };
+      hijos.push(el('p', {}, `${motivos[cierre.motivo] ?? cierre.motivo}`,
+        cierre.valorado ? ` · valoración ${cierre.nps}/10${cierre.comentario ? `: «${cierre.comentario}»` : ''}` : ' · sin valoración todavía',
+        cierre.resena_clic ? ' · abrió el enlace de reseña' : '',
+        cierre.testimonio ? ` · testimonio ${cierre.testimonio.autorizado ? 'autorizado' : 'retirado'}` : '',
+        ` · ${cierre.referidos} recomendado(s)`));
+      hijos.push(el('p', { className: 'nota' }, 'Enlace de valoración del cliente: ', el('a', { href: cierre.urlValoracion, target: '_blank', textContent: cierre.urlValoracion })));
+      if (cierre.archivado) hijos.push(el('p', {}, `Archivado el ${cierre.archivado}. Conservar documentos hasta el ${cierre.conservar_hasta} (art. 1964.2 CC, configurable).${cierre.documentos_eliminados ? ' Documentos eliminados.' : ''}`));
+      if (cierre.puedeEliminar) {
+        const borrar = el('button', { className: 'boton peligro pequeno', type: 'button', textContent: 'Eliminar los documentos del expediente' });
+        borrar.addEventListener('click', async () => {
+          if (!confirm('Se borrarán definitivamente los documentos cifrados del cliente. ¿Continuar?')) return;
+          await api(`/expedientes/${expedienteId}/eliminar-documentos`, { method: 'POST', body: '{}' }).catch((error) => alert(error.message));
+          await cargarCierre();
+        });
+        hijos.push(borrar);
+      }
+    }
+    if (resolucion && !cierre?.archivado) {
+      const archivar = el('button', { className: 'boton secundario pequeno', type: 'button', textContent: 'Archivar el expediente' });
+      archivar.addEventListener('click', async () => {
+        try {
+          await api(`/expedientes/${expedienteId}/archivar`, { method: 'POST', body: '{}' });
+          await cargarSeguimiento();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+      hijos.push(archivar);
+    }
+    if (!hijos.length) hijos.push(el('p', { className: 'nota', textContent: 'Al registrar la resolución sobre la exoneración se iniciará el cierre: valoración, reseña y archivo.' }));
+    caja.replaceChildren(...hijos);
+  }
+
   async function cargarSeguimiento() {
     seguimiento = await api(`/expedientes/${expedienteId}/seguimiento`);
     pintarSeguimiento();
+    await cargarCierre();
   }
 
   $('form-actuacion').addEventListener('submit', async (evento) => {
@@ -260,6 +301,7 @@
     try {
       seguimiento = await api(`/expedientes/${expedienteId}/actuaciones`, { method: 'POST', body: JSON.stringify(cuerpo) });
       pintarSeguimiento();
+      await cargarCierre();
       estado.textContent = 'Actuación registrada.';
       estado.className = 'estado ok';
       f.detalle.value = '';

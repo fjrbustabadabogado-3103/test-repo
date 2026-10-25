@@ -1,0 +1,20 @@
+{
+  "_comentario": "Cierre del expediente, valoración del cliente, reseñas, testimonios y recomendaciones.",
+  "valoracion": {
+    "diasTrasResolucion": 2,
+    "umbralAlertaNps": 6
+  },
+  "resenas": {
+    "_base": "art. 20.4 TRLGDCU: las reseñas deben referirse a servicios adquiridos o utilizados en los 30 días naturales anteriores. La petición se hace a todos los clientes, sin filtrar por su valoración.",
+    "urlGoogle": "",
+    "ventanaDias": 30,
+    "recordatoriosDias": [
+      10,
+      20
+    ]
+  },
+  "conservacion": {
+    "_base": "art. 1964.2 CC: las acciones personales sin plazo especial prescriben a los cinco años. El despacho debe confirmar el plazo aplicable a cada expediente.",
+    "aniosTrasCierre": 5
+  }
+}

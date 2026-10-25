@@ -65,6 +65,7 @@ export function loadConfig(env = process.env, overrides = {}) {
     documentos: leerJson('documentos'),
     calendario: leerJson('calendario'),
     procesal: leerJson('procesal'),
+    cierre: leerJson('cierre'),
     ia: {
       // Extracción de datos de documentos con la API de Claude. Requiere credenciales de Anthropic y contrato de encargo (art. 28 RGPD).
       activada: env.IA_EXTRACCION === 'activada',

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { entornoConArchivos, hastaCliente } from './helpers.js';
+import { entornoConArchivos, hastaListo, tareasEquipo } from './helpers.js';
 import { domingoDePascua, esInhabil, calcularPlazo, diasHabilesRestantes } from '../src/modules/seguimiento/calendario.js';
 
 // ---------------- Cómputo (arts. 130, 133 y 135 LEC) ----------------
@@ -53,29 +53,6 @@ test('días hábiles restantes', () => {
 });
 
 // ---------------- Flujo del procedimiento ----------------
-
-const PDF = Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << >>\n%%EOF\n');
-
-async function hastaListo(e) {
-  const { lead } = await hastaCliente(e);
-  const exp = e.store.expedienteDeLead(lead.id);
-  await e.app.inject({
-    method: 'POST', url: `/api/expedientes/${exp.token}/datos`,
-    payload: { domicilio: 'Calle Mayor 1, Madrid', estado_civil: 'soltero', situacion_laboral: 'asalariado', tiene_inmuebles: 'no', tiene_vehiculos: 'no', procedimientos_judiciales: 'no', causas: 'Despido.' },
-  });
-  for (const doc of e.store.documentosDeExpediente(exp.id).filter((d) => d.obligatorio && d.estado !== 'no_aplica')) {
-    await e.app.inject({ method: 'PUT', url: `/api/expedientes/${exp.token}/documentos/${doc.id}`, payload: PDF, headers: { 'content-type': 'application/pdf' } });
-    await e.admin('POST', `/documentos/${doc.id}/revision`, { decision: 'validar' });
-  }
-  const base = `/expedientes/${exp.id}`;
-  const a = (await e.admin('POST', `${base}/acreedores`, { nombre: 'Banco', tipo: 'financiera', importe: 9000, domicilio: 'Calle Banco 1', vencimiento: '2025-01-10' })).json();
-  await e.admin('PATCH', `/acreedores/${a.id}`, { revisado: true });
-  await e.admin('PUT', `${base}/preparacion`, { historia: 'Historia.', ruta: 'sin_masa', procurador: 'Dña. Procuradora' });
-  return { lead, expediente: exp, base };
-}
-
-const tareasEquipo = (e, texto) => e.store.db.prepare("SELECT datos FROM tareas WHERE tipo = 'aviso_equipo'").all()
-  .map((t) => JSON.parse(t.datos).extra?.evento ?? '').filter((ev) => ev.includes(texto));
 
 test('presentación, edicto del concurso sin masa, plazos encadenados, festivos locales y alertas', async () => {
   const e = entornoConArchivos();

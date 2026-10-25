@@ -121,6 +121,11 @@
     "nota": {
       "titulo": "Anotación",
       "visibleCliente": false
+    },
+    "archivo": {
+      "titulo": "Archivo del procedimiento",
+      "estado": "archivado",
+      "visibleCliente": false
     }
   },
   "estadosCliente": {

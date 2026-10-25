@@ -5,7 +5,7 @@ import {
   normalizarTelefono, normalizarEmail, interpretarImporte, interpretarSiNo, interpretarTipoDeudor, textoCorto, sumarDias,
 } from '../../util.js';
 
-const ATRIBUCION = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid', 'fbc', 'pagina'];
+const ATRIBUCION = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid', 'fbc', 'pagina', 'ref'];
 const DIAS_DEDUPLICACION = 30;
 
 export class ErrorValidacion extends Error {

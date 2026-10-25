@@ -285,6 +285,25 @@ CREATE TABLE IF NOT EXISTS plazos (
   creado TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS plazos_estado ON plazos(estado, vence);
+
+CREATE TABLE IF NOT EXISTS cierres (
+  expediente_id TEXT PRIMARY KEY REFERENCES expedientes(id),
+  lead_id TEXT NOT NULL REFERENCES leads(id),
+  token TEXT NOT NULL UNIQUE,
+  codigo_referido TEXT NOT NULL UNIQUE,
+  motivo TEXT NOT NULL,
+  servicio_completado TEXT,
+  nps INTEGER,
+  comentario TEXT,
+  valorado TEXT,
+  resena_clic TEXT,
+  testimonio TEXT,
+  archivado TEXT,
+  conservar_hasta TEXT,
+  aviso_conservacion TEXT,
+  documentos_eliminados TEXT,
+  creado TEXT NOT NULL
+);
 `;
 
 export const ETAPAS = [
@@ -842,6 +861,41 @@ export class Store {
     const valores = columnas.map((c) => (['avisos_calendario', 'alertas_enviadas'].includes(c) ? JSON.stringify(cambios[c]) : typeof cambios[c] === 'boolean' ? (cambios[c] ? 1 : 0) : cambios[c] ?? null));
     this.db.prepare(`UPDATE plazos SET ${columnas.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`).run(...valores, id);
     return this.plazo(id);
+  }
+
+  // ---------- Cierre, valoraciones y recomendaciones (módulo 7) ----------
+
+  crearCierre({ expediente_id, lead_id, motivo, servicio_completado = null }) {
+    this.db.prepare(`INSERT INTO cierres (expediente_id, lead_id, token, codigo_referido, motivo, servicio_completado, creado)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`).run(expediente_id, lead_id, nuevoToken(), nuevoToken(6).replace(/[-_]/g, 'x'), motivo, servicio_completado, this.ahora());
+    return this.cierre(expediente_id);
+  }
+
+  cierre(expedienteId) {
+    return filaJson(this.db.prepare('SELECT * FROM cierres WHERE expediente_id = ?').get(expedienteId), ['testimonio']);
+  }
+
+  cierrePorToken(token) {
+    return filaJson(this.db.prepare('SELECT * FROM cierres WHERE token = ?').get(token), ['testimonio']);
+  }
+
+  cierrePorCodigo(codigo) {
+    return filaJson(this.db.prepare('SELECT * FROM cierres WHERE codigo_referido = ?').get(codigo), ['testimonio']);
+  }
+
+  cierres() {
+    return this.db.prepare('SELECT * FROM cierres ORDER BY creado DESC').all().map((f) => filaJson(f, ['testimonio']));
+  }
+
+  actualizarCierre(expedienteId, cambios) {
+    const columnas = Object.keys(cambios);
+    const valores = columnas.map((c) => (c === 'testimonio' ? JSON.stringify(cambios[c]) : cambios[c] ?? null));
+    this.db.prepare(`UPDATE cierres SET ${columnas.map((c) => `${c} = ?`).join(', ')} WHERE expediente_id = ?`).run(...valores, expedienteId);
+    return this.cierre(expedienteId);
+  }
+
+  leadsConReferido(codigo) {
+    return this.db.prepare("SELECT * FROM leads WHERE json_extract(atribucion, '$.ref') = ?").all(codigo).map(filaLead);
   }
 
   cerrar() {

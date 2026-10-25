@@ -1,6 +1,6 @@
 # Bustabad Abogados · Captación y contratación automatizadas (Ley de Segunda Oportunidad)
 
-Aplicación que automatiza los seis primeros módulos del negocio:
+Aplicación que automatiza el negocio completo, en siete módulos:
 
 1. **Captación**: formulario web y formularios instantáneos de Meta (Facebook/Instagram), con atribución por campaña y envío de las etapas del CRM a la API de Conversiones de Meta.
 2. **Cualificación y agenda**: semáforo automático basado en el TRLC, respuesta por WhatsApp en segundos, reserva de la consulta online, recordatorios, seguimientos y gestión de ausencias.
@@ -8,13 +8,14 @@ Aplicación que automatiza los seis primeros módulos del negocio:
 4. **Recogida de documentos**: portal del cliente con la lista de documentos adaptada a su caso, subida desde el móvil con almacenamiento cifrado, revisión por el abogado y recordatorios hasta completar el expediente.
 5. **Preparación del expediente**: relación de acreedores e inventario (con extracción opcional por IA que el abogado revisa), indicadores para decidir la vía, comprobaciones antes de presentar y borradores en Word de la memoria, el inventario, la relación de acreedores y la solicitud de concurso.
 6. **Seguimiento procesal y plazos**: actuaciones del procedimiento, cálculo de plazos procesales con el calendario oficial, alertas escalonadas, agenda de plazos con suscripción desde Google Calendar u Outlook e información al cliente.
+7. **Cierre, reseñas y recomendaciones**: valoración del cliente al terminar, petición de reseña dentro de los 30 días que exige la ley, testimonios con autorización expresa y revocable, enlace de recomendación, archivo y plazo de conservación de los documentos.
 
 Sin credenciales funciona **entero en local**: los WhatsApp y correos se guardan en la bandeja de salida (tabla `salida`) y los pagos son simulados.
 
 ## Verla en el navegador sin instalar nada (GitHub Codespaces)
 
-1. En GitHub, abre el repositorio y elige la rama `feature/documentos-lso`.
-2. Pulsa **Code → Codespaces → Create codespace on feature/documentos-lso**.
+1. En GitHub, abre el repositorio y elige la rama más reciente, `feature/cierre-lso`, que incluye los siete módulos.
+2. Pulsa **Code → Codespaces → Create codespace on feature/cierre-lso**.
 3. Espera 1 o 2 minutos: se instala y arranca sola, y se abre una pestaña con la aplicación. Si no se abre, ve a la pestaña **Ports** y pulsa el globo del puerto 3000.
 4. Panel del despacho: añade `/admin` a la dirección y entra con el token `dev-admin`.
 
@@ -28,7 +29,7 @@ Requisitos: Node.js 22.13 o superior (usa el SQLite integrado de Node; no hay de
 npm install
 cp .env.example .env      # rellenar según la sección "Integraciones"
 npm start                 # http://localhost:3000
-npm test                  # 49 pruebas: reglas, agenda, pagos, firmas, documentos, preparación, plazos y flujo completo
+npm test                  # 55 pruebas: reglas, agenda, pagos, firmas, documentos, preparación, plazos, cierre y flujo completo
 ```
 
 Las variables de entorno se leen del entorno del proceso. Para usar el fichero `.env` en local: `node --env-file=.env src/index.js`.
@@ -41,6 +42,7 @@ Las variables de entorno se leen del entorno del proceso. Para usar el fichero `
 | `/expediente/:token` | Portal del cliente para sus datos y documentos |
 | `/admin` | Panel del despacho: métricas, leads, ficha y envío de propuestas (en desarrollo el token es `dev-admin`) |
 | `/admin/expediente/:id` | Preparación del expediente: acreedores, bienes, memoria, comprobaciones y borradores en Word |
+| `/valoracion/:token` | Valoración del cliente al terminar, testimonio y enlace de recomendación |
 | `/privacidad` | Política de privacidad generada desde `config/despacho.json` |
 
 ## Cómo funciona el flujo
@@ -161,6 +163,29 @@ En la pantalla del expediente, sección «Seguimiento procesal»:
 
 **Importante:** el cómputo es una ayuda. El letrado debe confirmar cada vencimiento, en especial mientras falten festivos por cargar o cuando la notificación se haya producido por el transcurso de tres días sin acceso (art. 162.2 LEC).
 
+## Módulo 7 · Cierre, reseñas y recomendaciones
+
+- **Al registrar la exoneración concedida:**
+  - a los 2 días el cliente recibe el enlace para valorar el servicio;
+  - a los 10 y 20 días, si no ha abierto el enlace de reseña, un recordatorio;
+  - todo dentro de los **30 días naturales** del art. 20.4 TRLGDCU (las reseñas deben referirse a servicios usados en ese plazo), y fuera de ese plazo no se envía nada.
+- **Sin filtrar a los satisfechos:** la reseña de Google se ofrece a todos, valoren como valoren, porque la política de Google prohíbe pedir reseñas solo a los clientes contentos. Si la nota es de 6 o menos, se avisa al equipo para llamar al cliente.
+- **Comunicaciones:** a los clientes se les escribe aunque no aceptaran comunicaciones comerciales, por la relación contractual previa (art. 21.2 LSSI), siempre con la opción de responder BAJA, que se respeta.
+- **Testimonios:**
+  - la autorización va separada del resto del formulario, guarda el texto del consentimiento, la fecha y el navegador, y la firma elegida: nombre, iniciales o anónimo (art. 7.1 y 7.2 RGPD; art. 20.2.e EGAE);
+  - el cliente la retira desde el mismo enlace con un clic (art. 7.3 RGPD), el testimonio desaparece de la lista del panel y se avisa al equipo para retirarlo de la web.
+- **Recomendaciones:**
+  - cada cliente tiene un enlace propio (`/?ref=…`) para compartir por WhatsApp, y los leads que llegan por él quedan atribuidos en las métricas;
+  - **a quien recomienda no se le comunica nada** sobre la persona recomendada (secreto profesional y protección de datos);
+  - no hay recompensas por recomendar: pagar por captar clientes puede chocar con las normas deontológicas y no he podido comprobar el Código Deontológico, que no se publica en el BOE.
+- **Archivo:**
+  - tras la resolución, y sin plazos propios pendientes, «Archivar el expediente» cierra el portal del cliente y registra la actuación;
+  - fija el plazo de conservación: 5 años por defecto (art. 1964.2 CC, acciones personales), configurable en `config/cierre.json`;
+  - al cumplirse se avisa al equipo, y solo entonces se pueden eliminar los documentos cifrados. Lo mismo se aplica cuando el cliente desiste.
+- **Panel:** NPS, valoraciones, clics en la reseña, testimonios autorizados, y leads y clientes que llegan por recomendación.
+
+Para activar el botón de reseña, pon en `config/cierre.json` → `resenas.urlGoogle` el enlace para escribir una reseña de la ficha de Google del despacho.
+
 **Protección de datos:** la extracción con IA envía documentos del cliente a Anthropic. Antes de activarla, firma el contrato de encargado del tratamiento (art. 28 RGPD) y revisa sus condiciones de conservación de datos.
 
 **Importante:** guarda `ARCHIVOS_CLAVE` en un lugar seguro y haz copia de seguridad de `ARCHIVOS_DIR` junto con la base de datos. Sin la clave, los documentos no se pueden recuperar.
@@ -180,6 +205,10 @@ En la pantalla del expediente, sección «Seguimiento procesal»:
 | LEC arts. 130, 133, 135 y 162; LOPJ art. 183 | Días inhábiles, cómputo de plazos, presentación hasta las 15:00 del día siguiente y notificaciones electrónicas |
 | RD 2001/1983 art. 45 | Fiestas nacionales no sustituibles que la aplicación calcula sola |
 | TRLC arts. 37 ter y 501 | Plazos del concurso sin masa: llamamiento a los acreedores, solicitud de exoneración y alegaciones |
+| TRLGDCU art. 20.4 | Las reseñas se piden dentro de los 30 días naturales siguientes al servicio |
+| LSSI art. 21.2 | Comunicaciones a clientes por la relación contractual previa, con baja en cada mensaje |
+| RGPD art. 7 | Consentimiento para el testimonio separado, demostrable y revocable tan fácil como se dio |
+| CC art. 1964.2 | Plazo de conservación por defecto tras el cierre (5 años, configurable) |
 | LOPJ art. 87 (LO 1/2025) | La solicitud se dirige a la Sección de lo Mercantil del Tribunal de Instancia de la capital de provincia, con las excepciones de los apartados 2, 3 y 4 |
 | EGAE (RD 135/2021) art. 20 | Textos sin promesas de resultado ni incitación al pleito |
 | EGAE art. 48 | Identificación del profesional, viabilidad, honorarios en hoja de encargo, costas e información del asunto |
@@ -200,6 +229,7 @@ En la pantalla del expediente, sección «Seguimiento procesal»:
 - [ ] Plantillas de WhatsApp aprobadas, webhooks verificados y un ciclo completo en modo test de Stripe.
 - [ ] Generar `ARCHIVOS_CLAVE` (`openssl rand -base64 32`), guardarla a salvo y revisar los textos de `config/documentos.json` (sobre todo «cómo conseguirlo»).
 - [ ] Cargar en `config/calendario.json` los festivos autonómicos de cada año e indicar en cada procedimiento los festivos locales de la sede del juzgado.
+- [ ] Poner en `config/cierre.json` el enlace de reseña de la ficha de Google y confirmar el plazo de conservación.
 - [ ] Decidir la firma: la actual es una firma electrónica simple reforzada con código de un solo uso y evidencias. Si se quiere más fuerza probatoria, integrar un prestador cualificado.
 
 ## Estructura
@@ -212,6 +242,7 @@ src/
   modules/documentos/     expediente, lista de documentos, almacén cifrado y revisión
   modules/preparacion/    acreedores, bienes, indicadores, extracción con IA y borradores en Word
   modules/seguimiento/    procedimiento, actuaciones, cómputo de plazos, alertas y calendario .ics
+  modules/cierre/         valoración, reseñas, testimonios, recomendaciones, archivo y conservación
   messaging/              WhatsApp Cloud API y correo (modo consola sin credenciales)
   jobs/worker.js          tareas programadas con reintentos
   metricas.js             embudo, tasas, velocidad de respuesta y coste por cliente
@@ -220,6 +251,6 @@ config/                   reglas de negocio editables
 test/                     pruebas (node:test)
 ```
 
-## Siguientes módulos
+## Próximos pasos
 
-7. Cierre, reseñas y recomendaciones.
+Los siete módulos del plan están construidos. Lo siguiente es ponerlo en producción: completar la configuración del despacho, conectar las cuentas reales (Meta, WhatsApp, Stripe, correo y, si se quiere, la API de Claude), cargar los festivos y probar un ciclo completo con datos de prueba antes de atender clientes reales.

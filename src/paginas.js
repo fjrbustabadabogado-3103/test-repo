@@ -153,3 +153,44 @@ export function paginaExpediente(ctx, expediente) {
 <div id="documentos" class="documentos"></div>
 </section>${datos}`, { scripts: ['expediente.js'] });
 }
+
+/** Valoración del cliente al terminar: puntuación, comentario, testimonio con autorización separada, reseña y recomendación. */
+export function paginaValoracion(ctx, cierre) {
+  const datos = `<script type="application/json" id="datos-valoracion">${JSON.stringify({ token: cierre.token }).replace(/</g, '\\u003c')}</script>`;
+  return layout(ctx.config, 'Su opinión', `
+<section class="tarjeta" id="bloque-formulario">
+<h1>¿Cómo le hemos atendido?</h1>
+<p class="subtitulo">Su opinión nos ayuda a mejorar. Todas las respuestas son voluntarias.</p>
+<form id="form-valoracion" novalidate>
+<fieldset><legend>Del 0 al 10, ¿con qué probabilidad nos recomendaría a un familiar o amigo?</legend>
+<div class="opciones" id="puntuaciones"></div></fieldset>
+<label class="campo">¿Qué podríamos mejorar o qué le ha gustado más? (opcional)<textarea name="comentario" rows="3" maxlength="1000"></textarea></label>
+<div class="aviso">
+<h2>Testimonio (opcional)</h2>
+<p>Si quiere, puede escribir unas líneas sobre su experiencia para que otras personas en su situación las lean. Solo lo publicaremos si lo autoriza expresamente.</p>
+<label class="campo">Su testimonio<textarea name="testimonio" rows="4" maxlength="1500"></textarea></label>
+<label class="campo">Firmar como<select name="firma"><option value="iniciales">Mis iniciales</option><option value="nombre">Mi nombre completo</option><option value="anonimo">Sin nombre («Cliente del despacho»)</option></select></label>
+<label class="casilla"><input type="checkbox" name="autoriza"> <span id="texto-consentimiento"></span></label>
+</div>
+<p class="estado" id="estado-valoracion" role="status"></p>
+<button class="boton" type="submit">Enviar</button>
+</form>
+</section>
+<section class="tarjeta oculto" id="bloque-gracias">
+<h1>Gracias</h1>
+<div id="bloque-resena" class="oculto">
+<p>Si quiere contar su experiencia públicamente, puede dejar su opinión en Google. Nos ayuda a que otras personas nos encuentren.</p>
+<p><a class="boton" id="enlace-resena" href="#" rel="noopener">Dejar mi opinión en Google</a></p>
+</div>
+<h2>¿Conoce a alguien en su misma situación?</h2>
+<p>Puede compartir este enlace. No le diremos a nadie que usted nos lo ha recomendado.</p>
+<p><code id="enlace-referido"></code></p>
+<p><a class="boton secundario" id="compartir-whatsapp" href="#" rel="noopener" target="_blank">Compartir por WhatsApp</a></p>
+<div id="bloque-testimonio" class="oculto">
+<h2>Su testimonio</h2>
+<p id="texto-testimonio"></p>
+<p class="nota" id="estado-testimonio"></p>
+<button class="boton peligro pequeno oculto" id="revocar" type="button">Retirar mi autorización</button>
+</div>
+</section>${datos}`, { scripts: ['valoracion.js'] });
+}

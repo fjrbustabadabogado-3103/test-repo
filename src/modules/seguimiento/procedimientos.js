@@ -2,6 +2,7 @@ import { ErrorValidacion } from '../captacion/intake.js';
 import { CAPITALES, datosPreparacion } from '../preparacion/preparacion.js';
 import { urlPortal } from '../documentos/expedientes.js';
 import { calcularPlazo, diasHabilesRestantes } from './calendario.js';
+import { iniciarCierre } from '../cierre/cierre.js';
 import { textoCorto, hmacHex, igualSeguro } from '../../util.js';
 
 export const CCAA_POR_PROVINCIA = {
@@ -155,6 +156,9 @@ export function registrarActuacion(ctx, expedienteId, cuerpo) {
   if (resultado.visible) {
     const novedad = def.mensajeCliente ?? resultado.actuacion.detalle ?? resultado.actuacion.titulo;
     ctx.store.programar('mensaje', ctx.reloj(), { plantilla: 'novedad_procedimiento', extra: { novedad, enlace_documentos: urlPortal(ctx, expediente) } }, expediente.lead_id);
+  }
+  if (['auto_exoneracion_concedida', 'auto_exoneracion_denegada'].includes(b.tipo)) {
+    iniciarCierre(ctx, expediente, { motivo: b.tipo === 'auto_exoneracion_concedida' ? 'exoneracion_concedida' : 'exoneracion_denegada', fecha: b.fecha });
   }
   const eventosEquipo = { auto_exoneracion_concedida: 'EXONERACIÓN CONCEDIDA', auto_exoneracion_denegada: 'URGENTE: exoneración DENEGADA, valorar recurso' };
   if (eventosEquipo[b.tipo]) ctx.store.programar('aviso_equipo', ctx.reloj(), { plantilla: 'aviso_equipo_evento', extra: { evento: eventosEquipo[b.tipo] } }, expediente.lead_id);
