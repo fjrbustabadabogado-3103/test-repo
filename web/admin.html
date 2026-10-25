@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel del despacho</title>
+<link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+<header class="cabecera"><span class="marca">Panel del despacho · Segunda Oportunidad</span></header>
+<main class="contenedor ancho">
+  <section class="tarjeta" id="acceso">
+    <h1>Acceso</h1>
+    <form id="form-acceso">
+      <label class="campo">Token de administración<input name="token" type="password" autocomplete="current-password" required></label>
+      <button class="boton" type="submit">Entrar</button>
+    </form>
+  </section>
+
+  <div id="app" class="oculto">
+    <section>
+      <div class="filtros">
+        <select id="periodo"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 90 días</option></select>
+      </div>
+      <div class="kpis" id="kpis"></div>
+    </section>
+
+    <div class="panel">
+      <section class="tarjeta">
+        <h2>Leads</h2>
+        <div class="filtros">
+          <select id="filtro-semaforo"><option value="">Todos los semáforos</option><option value="verde">Verde</option><option value="amarillo">Amarillo</option><option value="rojo">Rojo</option></select>
+          <select id="filtro-etapa"><option value="">Todas las etapas</option></select>
+        </div>
+        <div class="tabla-scroll">
+          <table class="lista-leads"><thead><tr><th></th><th>Nombre</th><th>Etapa</th><th>Deuda</th><th>Origen</th><th>Entrada</th></tr></thead><tbody id="leads"></tbody></table>
+        </div>
+      </section>
+
+      <section class="tarjeta" id="ficha"><p class="nota">Seleccione un lead para ver su ficha.</p></section>
+    </div>
+
+    <section class="tarjeta">
+      <h2>Gasto en publicidad</h2>
+      <form id="form-gasto" class="filtros">
+        <input name="mes" type="month" required aria-label="Mes">
+        <select name="origen" aria-label="Origen"><option value="meta">Meta</option><option value="google">Google</option><option value="otros">Otros</option></select>
+        <input name="importe" type="number" min="0" step="0.01" placeholder="Importe €" required aria-label="Importe">
+        <button class="boton pequeno" type="submit">Guardar</button>
+      </form>
+      <p class="nota">Con el gasto mensual registrado, el panel calcula el coste por lead y el coste por cliente.</p>
+    </section>
+  </div>
+</main>
+<script src="/static/admin.js" defer></script>
+</body>
+</html>
