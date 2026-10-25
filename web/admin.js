@@ -143,10 +143,71 @@
       ...seccion('Hoja de encargo', formPropuesta, estadoPropuesta,
         ...d.encargos.map((e) => el('div', { className: 'aviso' }, `${e.estado.toUpperCase()} · ${euros(e.honorarios_cent)} · ${e.num_cuotas} cuotas · `, el('a', { href: e.url, target: '_blank', textContent: 'ver' }),
           el('ul', { className: 'historial' }, e.pagos.map((p) => el('li', { textContent: `${p.tipo === 'entrada' ? 'Entrada' : `Cuota ${p.numero}`} · ${euros(p.importe_cent)} · ${p.vencimiento} · ${p.estado}` })))))),
+      ...seccion('Documentación', ...seccionDocumentos(d, id)),
       ...seccion('Próximas tareas automáticas', el('ul', { className: 'historial' }, d.tareas.length ? d.tareas.map((t) => el('li', { textContent: `${fecha(t.vence)} · ${t.tipo}${t.datos.plantilla ? ` (${t.datos.plantilla})` : ''}` })) : el('li', { textContent: 'Ninguna.' }))),
       ...seccion('Historial', el('ul', { className: 'historial' }, [...d.eventos].reverse().map((e) => el('li', { textContent: `${fecha(e.fecha)} · ${e.tipo}${e.datos.a ? ` → ${e.datos.a}` : ''}${e.datos.plantilla ? ` · ${e.datos.plantilla}` : ''}` })))),
       ...seccion('Mensajes enviados', el('ul', { className: 'historial' }, d.salida.map((s) => el('li', { textContent: `${fecha(s.fecha)} · ${s.canal}/${s.proveedor} · ${s.plantilla} · ${s.estado}` })))),
     ].filter(Boolean));
+  }
+
+  async function descargar(archivo) {
+    const respuesta = await fetch(`/admin/api/archivos/${archivo.id}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!respuesta.ok) return alert('No se pudo descargar el archivo.');
+    const url = URL.createObjectURL(await respuesta.blob());
+    const enlace = el('a', { href: url, download: archivo.nombre });
+    document.body.append(enlace);
+    enlace.click();
+    enlace.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  function seccionDocumentos(d, leadId) {
+    const exp = d.expediente;
+    if (!exp) {
+      if (d.lead.etapa !== 'cliente') return [el('p', { className: 'nota', textContent: 'Se abrirá cuando el cliente pague la entrada y empiece el servicio.' })];
+      const boton = el('button', { className: 'boton pequeno', textContent: 'Abrir expediente y pedir documentos ahora' });
+      boton.addEventListener('click', async () => {
+        await api(`/leads/${leadId}/expediente`, { method: 'POST', body: '{}' }).catch((error) => alert(error.message));
+        await abrirLead(leadId);
+      });
+      return [el('p', { className: 'nota', textContent: 'El expediente se abre automáticamente al empezar el servicio (tras el plazo de desistimiento si no pidió inicio inmediato).' }), boton];
+    }
+    const ESTADOS = { recogida_documentos: 'Recogiendo documentos', en_revision: 'Pendiente de tu revisión', documentacion_completa: 'Documentación completa', cerrado: 'Cerrado' };
+    const cabecera = el('p', {}, `${ESTADOS[exp.estado] ?? exp.estado} · aportados ${exp.progreso.aportados}/${exp.progreso.obligatorios} · validados ${exp.progreso.validados}/${exp.progreso.obligatorios} · `,
+      el('a', { href: exp.url, target: '_blank', textContent: 'portal del cliente' }));
+    const datos = exp.datos?.domicilio
+      ? el('p', { className: 'nota', textContent: `Domicilio: ${exp.datos.domicilio} · Estado civil: ${exp.datos.estado_civil}${exp.datos.conyuge_nombre ? ` (${exp.datos.conyuge_nombre}, ${exp.datos.regimen_economico ?? 'régimen no indicado'})` : ''} · Situación: ${exp.datos.situacion_laboral}${exp.datos.causas ? ` · Causas: ${exp.datos.causas}` : ''}` })
+      : el('p', { className: 'aviso', textContent: 'El cliente aún no ha rellenado sus datos complementarios.' });
+    const lista = el('ul', { className: 'historial' }, exp.documentos.map((doc) => {
+      const acciones = [];
+      const sinArchivos = doc.archivos.length === 0;
+      const apudActa = sinArchivos && doc.clave === 'poder_procurador';
+      if (doc.estado !== 'validado' && exp.estado !== 'cerrado' && (!sinArchivos || apudActa)) {
+        const validar = el('button', { className: 'boton pequeno', textContent: apudActa ? 'Validar (otorgado apud acta)' : 'Validar' });
+        validar.addEventListener('click', async () => {
+          await api(`/documentos/${doc.id}/revision`, { method: 'POST', body: JSON.stringify({ decision: 'validar' }) }).catch((error) => alert(error.message));
+          await abrirLead(leadId);
+        });
+        const rechazar = el('button', { className: 'boton pequeno secundario', textContent: 'Pedir que lo corrija' });
+        rechazar.addEventListener('click', async () => {
+          const motivo = prompt('¿Qué tiene que corregir el cliente? (se le enviará este texto)');
+          if (!motivo) return;
+          await api(`/documentos/${doc.id}/revision`, { method: 'POST', body: JSON.stringify({ decision: 'rechazar', motivo }) }).catch((error) => alert(error.message));
+          await abrirLead(leadId);
+        });
+        acciones.push(validar);
+        if (!sinArchivos) acciones.push(' ', rechazar);
+      }
+      const archivos = doc.archivos.map((a) => {
+        const boton = el('button', { className: 'enlace-boton', type: 'button', textContent: a.nombre });
+        boton.style.color = 'var(--marca)';
+        boton.addEventListener('click', () => descargar(a));
+        return el('span', {}, ' · ', boton);
+      });
+      return el('li', {}, el('strong', { textContent: `${doc.titulo}${doc.obligatorio ? '' : ' (opcional)'}: ` }), doc.estado,
+        doc.motivoRechazo ? ` (${doc.motivoRechazo})` : '', ...archivos, el('div', {}, ...acciones));
+    }));
+    return [cabecera, datos, lista];
   }
 
   async function iniciar() {

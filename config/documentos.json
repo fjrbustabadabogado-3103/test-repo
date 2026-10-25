@@ -1,0 +1,166 @@
+{
+  "_comentario": "Documentación que se pide a cada cliente. 'si' activa el documento según las respuestas del cuestionario (respuestas.*) o los datos complementarios del portal (datos.*): un valor exacto, una lista de valores admitidos o un objeto {\">\": n}. Las indicaciones de 'comoObtenerlo' son orientativas y debe revisarlas el despacho.",
+  "maxMbPorArchivo": 15,
+  "maxArchivosPorDocumento": 20,
+  "maxMbPorExpediente": 400,
+  "recordatorioCadaDias": 3,
+  "maxRecordatorios": 6,
+  "documentos": [
+    {
+      "clave": "dni",
+      "titulo": "DNI o NIE",
+      "descripcion": "Foto o escaneo de las dos caras, en vigor.",
+      "comoObtenerlo": "Haga una foto con el móvil de la parte delantera y de la trasera, sin reflejos.",
+      "obligatorio": true
+    },
+    {
+      "clave": "poder_procurador",
+      "titulo": "Poder para el procurador",
+      "descripcion": "La solicitud de concurso la presenta un procurador con un poder especial, otorgado ante notario o apud acta (art. 6.2 TRLC).",
+      "comoObtenerlo": "Le indicaremos cómo hacerlo: puede otorgarse apud acta por comparecencia electrónica en la sede judicial o ante notario. Si lo hace ante notario, suba aquí la copia.",
+      "obligatorio": true
+    },
+    {
+      "clave": "empadronamiento",
+      "titulo": "Certificado de empadronamiento",
+      "descripcion": "Acredita su domicilio, que determina el juzgado competente (art. 45 TRLC).",
+      "comoObtenerlo": "En la sede electrónica o en las oficinas de su ayuntamiento.",
+      "obligatorio": true
+    },
+    {
+      "clave": "irpf",
+      "titulo": "Declaraciones de la renta de los 3 últimos años",
+      "descripcion": "Son obligatorias para pedir la exoneración (art. 501.3 TRLC). Si no estaba obligado a declarar, suba el certificado de imputaciones de esos años.",
+      "comoObtenerlo": "Sede electrónica de la Agencia Tributaria, con Cl@ve o certificado digital: «Renta» → «Consultar declaraciones presentadas».",
+      "obligatorio": true
+    },
+    {
+      "clave": "vida_laboral",
+      "titulo": "Informe de vida laboral",
+      "descripcion": "Necesario para la memoria sobre su actividad de los tres últimos años (art. 7.1º TRLC).",
+      "comoObtenerlo": "Sede electrónica de la Seguridad Social (Importass), con Cl@ve, certificado digital o SMS al móvil registrado.",
+      "obligatorio": true
+    },
+    {
+      "clave": "ingresos",
+      "titulo": "Justificantes de ingresos de los últimos 6 meses",
+      "descripcion": "Nóminas, pensión o prestaciones que cobre actualmente.",
+      "comoObtenerlo": "Su empresa, el portal del empleado, la Seguridad Social (pensiones) o el SEPE (prestaciones por desempleo).",
+      "obligatorio": true,
+      "si": { "respuestas.ingresos_mensuales": { ">": 0 } }
+    },
+    {
+      "clave": "cirbe",
+      "titulo": "Informe de la Central de Información de Riesgos (CIRBE)",
+      "descripcion": "Recoge los préstamos y créditos a su nombre comunicados por las entidades financieras. Nos ayuda a no olvidar ningún acreedor (art. 7.3º TRLC).",
+      "comoObtenerlo": "Sede electrónica del Banco de España, con Cl@ve o certificado digital. Es gratuito.",
+      "obligatorio": true
+    },
+    {
+      "clave": "certificado_aeat",
+      "titulo": "Certificado de deudas con Hacienda",
+      "descripcion": "Certificado de situación de deudas con la Agencia Tributaria (aunque crea que no debe nada).",
+      "comoObtenerlo": "Sede electrónica de la Agencia Tributaria → «Certificados» → «Deudas».",
+      "obligatorio": true
+    },
+    {
+      "clave": "certificado_tgss",
+      "titulo": "Certificado de deudas con la Seguridad Social",
+      "descripcion": "Certificado de estar o no al corriente con la Seguridad Social.",
+      "comoObtenerlo": "Sede electrónica de la Seguridad Social (Importass) → «Certificado de estar al corriente».",
+      "obligatorio": true
+    },
+    {
+      "clave": "deudas",
+      "titulo": "Contratos y reclamaciones de cada deuda",
+      "descripcion": "Para cada préstamo, tarjeta, financiación o factura impagada: el contrato (si lo tiene) y la última carta, correo o SMS de reclamación con el importe. Necesitamos identidad, domicilio, importe y vencimiento de cada acreedor (art. 7.3º TRLC).",
+      "comoObtenerlo": "Puede subir varios archivos. Si no tiene el contrato, pídalo a la entidad o suba solo la última reclamación.",
+      "obligatorio": true
+    },
+    {
+      "clave": "extractos",
+      "titulo": "Extractos de todas sus cuentas de los últimos 12 meses",
+      "descripcion": "De todas las cuentas de las que sea titular, para el inventario de bienes y derechos (art. 7.2º TRLC).",
+      "comoObtenerlo": "Desde la banca online de cada entidad, en PDF.",
+      "obligatorio": true
+    },
+    {
+      "clave": "nota_indices",
+      "titulo": "Nota de índices del Registro de la Propiedad",
+      "descripcion": "Indica si tiene inmuebles a su nombre en cualquier lugar de España (art. 7.2º TRLC).",
+      "comoObtenerlo": "Se solicita online en la sede de los Registradores de España. Si lo prefiere, la pedimos nosotros.",
+      "obligatorio": true
+    },
+    {
+      "clave": "hipoteca",
+      "titulo": "Escritura de hipoteca y último recibo",
+      "descripcion": "La deuda con garantía real tiene un tratamiento especial (art. 489.1.8º TRLC).",
+      "comoObtenerlo": "Copia de la escritura (notaría o banco) y el último recibo o certificado de deuda pendiente.",
+      "obligatorio": true,
+      "si": { "respuestas.vivienda_hipotecada": true }
+    },
+    {
+      "clave": "inmuebles",
+      "titulo": "Escrituras o notas simples de sus inmuebles",
+      "descripcion": "De cada inmueble del que sea titular total o parcialmente.",
+      "comoObtenerlo": "Escritura de compra, herencia o donación, o nota simple del Registro de la Propiedad.",
+      "obligatorio": true,
+      "si": { "datos.tiene_inmuebles": true }
+    },
+    {
+      "clave": "vehiculos",
+      "titulo": "Permiso de circulación de sus vehículos",
+      "descripcion": "De cada vehículo a su nombre, para el inventario.",
+      "comoObtenerlo": "Foto del permiso de circulación. Si tiene financiación, añada el contrato en «Contratos y reclamaciones».",
+      "obligatorio": true,
+      "si": { "datos.tiene_vehiculos": true }
+    },
+    {
+      "clave": "procedimientos",
+      "titulo": "Demandas, embargos o sentencias",
+      "descripcion": "Si algún acreedor le ha reclamado judicialmente, hay que identificar el procedimiento y su estado (art. 7.3º TRLC).",
+      "comoObtenerlo": "Notificaciones del juzgado, decretos de embargo o la última comunicación del procedimiento.",
+      "obligatorio": true,
+      "si": { "datos.procedimientos_judiciales": true }
+    },
+    {
+      "clave": "matrimonio",
+      "titulo": "Certificado de matrimonio o de pareja inscrita y, en su caso, capitulaciones",
+      "descripcion": "La memoria debe indicar la identidad del cónyuge o pareja, la fecha y el régimen económico (art. 7.1º TRLC).",
+      "comoObtenerlo": "Registro Civil (también online con certificado digital) o libro de familia. Las capitulaciones, en la notaría que las autorizó.",
+      "obligatorio": true,
+      "si": { "datos.estado_civil": ["casado", "pareja_inscrita"] }
+    },
+    {
+      "clave": "divorcio",
+      "titulo": "Sentencia de separación o divorcio y convenio regulador",
+      "descripcion": "Necesaria para conocer las pensiones fijadas: las deudas por alimentos no son exonerables (art. 489.1.3º TRLC).",
+      "comoObtenerlo": "Copia de la sentencia y del convenio regulador.",
+      "obligatorio": true,
+      "si": { "datos.estado_civil": ["separado_divorciado"] }
+    },
+    {
+      "clave": "autonomo",
+      "titulo": "Documentación de su actividad como autónomo",
+      "descripcion": "Alta y, en su caso, baja en Hacienda y en el RETA, y declaraciones trimestrales y resúmenes anuales de IVA e IRPF de los 3 últimos años. Si está obligado a llevar contabilidad, sus cuentas (art. 8 TRLC).",
+      "comoObtenerlo": "Sede electrónica de la Agencia Tributaria y de la Seguridad Social, o su gestoría.",
+      "obligatorio": true,
+      "si": { "respuestas.tipo_deudor": "autonomo" }
+    },
+    {
+      "clave": "antecedentes",
+      "titulo": "Resolución o sentencia y justificante de pago",
+      "descripcion": "Indicó una condena o sanción en los últimos 10 años. Si la responsabilidad está satisfecha, puede no impedir la exoneración (art. 487.1 TRLC).",
+      "comoObtenerlo": "Copia de la sentencia o resolución y del justificante de pago de la multa, sanción o responsabilidad.",
+      "obligatorio": true,
+      "si": { "respuestas.antecedentes": true }
+    },
+    {
+      "clave": "otros",
+      "titulo": "Otros documentos que quiera aportar",
+      "descripcion": "Cualquier documento que crea útil: despidos, enfermedad, separación… nos ayuda a explicar las causas de la insolvencia en la memoria (art. 7.1º TRLC).",
+      "comoObtenerlo": "Opcional.",
+      "obligatorio": false
+    }
+  ]
+}

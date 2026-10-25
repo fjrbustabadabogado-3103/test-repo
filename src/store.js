@@ -129,6 +129,45 @@ CREATE TABLE IF NOT EXISTS gasto_publicidad (
   importe_cent INTEGER NOT NULL,
   PRIMARY KEY (mes, origen)
 );
+
+CREATE TABLE IF NOT EXISTS expedientes (
+  id TEXT PRIMARY KEY,
+  lead_id TEXT NOT NULL REFERENCES leads(id),
+  encargo_id TEXT NOT NULL UNIQUE REFERENCES encargos(id),
+  token TEXT NOT NULL UNIQUE,
+  estado TEXT NOT NULL,
+  datos TEXT NOT NULL DEFAULT '{}',
+  creado TEXT NOT NULL,
+  actualizado TEXT NOT NULL,
+  documentacion_completa TEXT
+);
+
+CREATE TABLE IF NOT EXISTS documentos (
+  id TEXT PRIMARY KEY,
+  expediente_id TEXT NOT NULL REFERENCES expedientes(id),
+  clave TEXT NOT NULL,
+  obligatorio INTEGER NOT NULL,
+  estado TEXT NOT NULL,
+  motivo_rechazo TEXT,
+  revisado TEXT,
+  actualizado TEXT NOT NULL,
+  UNIQUE (expediente_id, clave)
+);
+
+CREATE TABLE IF NOT EXISTS archivos (
+  id TEXT PRIMARY KEY,
+  documento_id TEXT NOT NULL REFERENCES documentos(id),
+  nombre TEXT NOT NULL,
+  tipo_mime TEXT NOT NULL,
+  tamano INTEGER NOT NULL,
+  sha256 TEXT NOT NULL,
+  ruta TEXT NOT NULL,
+  iv TEXT NOT NULL,
+  etiqueta TEXT NOT NULL,
+  subido TEXT NOT NULL,
+  eliminado TEXT
+);
+CREATE INDEX IF NOT EXISTS archivos_documento ON archivos(documento_id);
 `;
 
 export const ETAPAS = [
@@ -451,6 +490,94 @@ export class Store {
       this.db.prepare("UPDATE tareas SET estado = 'cancelada' WHERE lead_id = ? AND estado = 'pendiente'").run(id);
     }
     return filas.length;
+  }
+
+  // ---------- Expedientes y documentos (módulo 4) ----------
+
+  crearExpediente({ lead_id, encargo_id, estado = 'recogida_documentos' }) {
+    const ahora = this.ahora();
+    const expediente = { id: nuevoId(), token: nuevoToken() };
+    this.db.prepare('INSERT INTO expedientes (id, lead_id, encargo_id, token, estado, creado, actualizado) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(expediente.id, lead_id, encargo_id, expediente.token, estado, ahora, ahora);
+    return this.expediente(expediente.id);
+  }
+
+  expediente(id) {
+    return filaJson(this.db.prepare('SELECT * FROM expedientes WHERE id = ?').get(id), ['datos']);
+  }
+
+  expedientePorToken(token) {
+    return filaJson(this.db.prepare('SELECT * FROM expedientes WHERE token = ?').get(token), ['datos']);
+  }
+
+  expedientePorEncargo(encargoId) {
+    return filaJson(this.db.prepare('SELECT * FROM expedientes WHERE encargo_id = ?').get(encargoId), ['datos']);
+  }
+
+  expedienteDeLead(leadId) {
+    return filaJson(this.db.prepare('SELECT * FROM expedientes WHERE lead_id = ? ORDER BY creado DESC LIMIT 1').get(leadId), ['datos']);
+  }
+
+  actualizarExpediente(id, cambios) {
+    const columnas = Object.keys(cambios);
+    const valores = columnas.map((c) => (c === 'datos' ? JSON.stringify(cambios[c]) : cambios[c] ?? null));
+    this.db.prepare(`UPDATE expedientes SET ${columnas.map((c) => `${c} = ?`).join(', ')}, actualizado = ? WHERE id = ?`).run(...valores, this.ahora(), id);
+    return this.expediente(id);
+  }
+
+  /** Crea el documento si no existe; si existe, actualiza si es obligatorio. Devuelve el documento. */
+  asegurarDocumento(expedienteId, clave, obligatorio) {
+    const existente = this.db.prepare('SELECT * FROM documentos WHERE expediente_id = ? AND clave = ?').get(expedienteId, clave);
+    if (existente) {
+      const estado = existente.estado === 'no_aplica' ? 'pendiente' : existente.estado;
+      this.db.prepare('UPDATE documentos SET obligatorio = ?, estado = ?, actualizado = ? WHERE id = ?').run(obligatorio ? 1 : 0, estado, this.ahora(), existente.id);
+      return this.documento(existente.id);
+    }
+    const id = nuevoId();
+    this.db.prepare("INSERT INTO documentos (id, expediente_id, clave, obligatorio, estado, actualizado) VALUES (?, ?, ?, ?, 'pendiente', ?)")
+      .run(id, expedienteId, clave, obligatorio ? 1 : 0, this.ahora());
+    return this.documento(id);
+  }
+
+  documento(id) {
+    const fila = this.db.prepare('SELECT * FROM documentos WHERE id = ?').get(id);
+    return fila ? { ...fila, obligatorio: Boolean(fila.obligatorio) } : null;
+  }
+
+  documentosDeExpediente(expedienteId) {
+    return this.db.prepare('SELECT * FROM documentos WHERE expediente_id = ? ORDER BY rowid').all(expedienteId)
+      .map((f) => ({ ...f, obligatorio: Boolean(f.obligatorio) }));
+  }
+
+  actualizarDocumento(id, cambios) {
+    const columnas = Object.keys(cambios);
+    this.db.prepare(`UPDATE documentos SET ${columnas.map((c) => `${c} = ?`).join(', ')}, actualizado = ? WHERE id = ?`)
+      .run(...columnas.map((c) => cambios[c] ?? null), this.ahora(), id);
+    return this.documento(id);
+  }
+
+  crearArchivo(datos) {
+    const archivo = { id: nuevoId(), subido: this.ahora(), ...datos };
+    this.db.prepare('INSERT INTO archivos (id, documento_id, nombre, tipo_mime, tamano, sha256, ruta, iv, etiqueta, subido) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(archivo.id, archivo.documento_id, archivo.nombre, archivo.tipo_mime, archivo.tamano, archivo.sha256, archivo.ruta, archivo.iv, archivo.etiqueta, archivo.subido);
+    return this.archivo(archivo.id);
+  }
+
+  archivo(id) {
+    return this.db.prepare('SELECT * FROM archivos WHERE id = ?').get(id) ?? null;
+  }
+
+  archivosDeDocumento(documentoId) {
+    return this.db.prepare('SELECT * FROM archivos WHERE documento_id = ? AND eliminado IS NULL ORDER BY subido').all(documentoId);
+  }
+
+  bytesDeExpediente(expedienteId) {
+    return this.db.prepare(`SELECT COALESCE(SUM(a.tamano), 0) AS total FROM archivos a JOIN documentos d ON d.id = a.documento_id
+      WHERE d.expediente_id = ? AND a.eliminado IS NULL`).get(expedienteId).total;
+  }
+
+  marcarArchivoEliminado(id) {
+    this.db.prepare('UPDATE archivos SET eliminado = ? WHERE id = ?').run(this.ahora(), id);
   }
 
   cerrar() {

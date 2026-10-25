@@ -5,6 +5,7 @@ import { localAUtc } from '../cualificacion/agenda.js';
 import { ErrorValidacion } from '../captacion/intake.js';
 import { cambiarEtapa } from '../../etapas.js';
 import { nuevoId } from '../../store.js';
+import { cerrarExpedienteDeEncargo } from '../documentos/expedientes.js';
 import {
   aCentimos, euros, hmacHex, igualSeguro, sumarDias, sumarMinutos, textoCorto, validarDniNie, escaparHtml, fechaLarga,
 } from '../../util.js';
@@ -206,6 +207,9 @@ export async function registrarPagoCobrado(ctx, pagoId, { referencia = null, pay
       ctx.store.programar('cobrar_cuota', localAUtc(cuota.vencimiento, '09:00', ctx.config.agenda.zona), { pagoId: cuota.id, grupo: 'cobros' }, lead.id);
     }
     cambiarEtapa(ctx, lead, 'cliente', { encargoId: encargo.id, valorCent: encargo.honorarios_cent });
+    // Sin solicitud expresa, el trabajo (y con él la petición de documentos) empieza al terminar el plazo de desistimiento.
+    const inicio = new Date(Math.max(ctx.reloj().getTime(), new Date(encargo.fecha_inicio_servicio).getTime()));
+    ctx.store.programar('abrir_expediente', inicio, { encargoId: encargo.id }, lead.id);
     ctx.store.programar('mensaje', ctx.reloj(), { plantilla: 'bienvenida_cliente' }, lead.id);
     ctx.store.programar('aviso_equipo', ctx.reloj(), { plantilla: 'aviso_equipo_evento', extra: { evento: `Entrada cobrada (${euros(pago.importe_cent)}): abrir expediente` } }, lead.id);
   }
@@ -249,6 +253,7 @@ export function desistir(ctx, token, { ip = null, userAgent = null } = {}) {
       ? 'Solicitó inicio inmediato: calcular el importe proporcional del servicio prestado (art. 108.4 TRLGDCU) y reembolsar el resto.'
       : 'Sin inicio inmediato: reembolsar íntegramente lo cobrado.',
   });
+  cerrarExpedienteDeEncargo(ctx, encargo.id);
   cambiarEtapa(ctx, lead, 'desistido', { motivo: 'desistimiento del consumidor' });
   ctx.store.programar('aviso_equipo', ctx.reloj(), { plantilla: 'aviso_equipo_evento', extra: { evento: 'DESISTIMIENTO: tramitar reembolso' } }, lead.id);
   return ctx.store.encargo(encargo.id);

@@ -2,6 +2,7 @@ import { condicionSeCumple, cambiarEtapa } from '../etapas.js';
 import { descargarLeadMeta, enviarEventoConversion } from '../modules/captacion/meta.js';
 import { registrarLead, leadDesdeMeta } from '../modules/captacion/intake.js';
 import { registrarPagoCobrado, registrarPagoFallido } from '../modules/contratacion/encargos.js';
+import { abrirExpediente, recordarDocumentos } from '../modules/documentos/expedientes.js';
 import { sumarDias, sumarMinutos } from '../util.js';
 
 const MAX_INTENTOS = 6;
@@ -55,6 +56,17 @@ function crearManejadores(ctx) {
         await registrarPagoFallido(ctx, pago.id, error.message);
         return 'fallido';
       }
+    },
+
+    async abrir_expediente(tarea) {
+      const encargo = ctx.store.encargo(tarea.datos.encargoId);
+      if (!encargo || encargo.estado !== 'activo') return 'omitida';
+      abrirExpediente(ctx, encargo);
+      return 'hecho';
+    },
+
+    async recordatorio_documentos(tarea, lead) {
+      return recordarDocumentos(ctx, tarea, lead);
     },
 
     async purga_rgpd() {

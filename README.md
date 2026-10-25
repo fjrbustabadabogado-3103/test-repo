@@ -1,10 +1,11 @@
 # Bustabad Abogados · Captación y contratación automatizadas (Ley de Segunda Oportunidad)
 
-Aplicación que automatiza los tres primeros módulos del negocio:
+Aplicación que automatiza los cuatro primeros módulos del negocio:
 
 1. **Captación**: formulario web y formularios instantáneos de Meta (Facebook/Instagram), con atribución por campaña y envío de las etapas del CRM a la API de Conversiones de Meta.
 2. **Cualificación y agenda**: semáforo automático basado en el TRLC, respuesta por WhatsApp en segundos, reserva de la consulta online, recordatorios, seguimientos y gestión de ausencias.
 3. **Contratación y cobro**: hoja de encargo generada desde el panel, firma electrónica con código de un solo uso, pago de la entrada (tarjeta o SEPA) y cobro automático de las cuotas.
+4. **Recogida de documentos**: portal del cliente con la lista de documentos adaptada a su caso, subida desde el móvil con almacenamiento cifrado, revisión por el abogado y recordatorios hasta completar el expediente.
 
 Sin credenciales funciona **entero en local**: los WhatsApp y correos se guardan en la bandeja de salida (tabla `salida`) y los pagos son simulados.
 
@@ -16,7 +17,7 @@ Requisitos: Node.js 22.13 o superior (usa el SQLite integrado de Node; no hay de
 npm install
 cp .env.example .env      # rellenar según la sección "Integraciones"
 npm start                 # http://localhost:3000
-npm test                  # 26 pruebas: reglas, agenda, pagos, firmas y flujo completo
+npm test                  # 36 pruebas: reglas, agenda, pagos, firmas, documentos y flujo completo
 ```
 
 Las variables de entorno se leen del entorno del proceso. Para usar el fichero `.env` en local: `node --env-file=.env src/index.js`.
@@ -26,6 +27,7 @@ Las variables de entorno se leen del entorno del proceso. Para usar el fichero `
 | `/` | Página de captación con el cuestionario de viabilidad |
 | `/reservar/:token` | Reserva de la consulta (enlace personal que recibe cada lead) |
 | `/encargo/:token` | Hoja de encargo: firma, pago, cuotas y desistimiento |
+| `/expediente/:token` | Portal del cliente para sus datos y documentos |
 | `/admin` | Panel del despacho: métricas, leads, ficha y envío de propuestas (en desarrollo el token es `dev-admin`) |
 | `/privacidad` | Política de privacidad generada desde `config/despacho.json` |
 
@@ -47,6 +49,14 @@ Panel: honorarios, entrada y cuotas ──► hoja de encargo por WhatsApp (reco
 Firma con código de un solo uso ──► confirmación por correo ──► pago de la entrada ──► CLIENTE
         ▼
 Cuotas cobradas automáticamente en su vencimiento · reintentos y aviso si fallan
+        ▼
+Inicio del servicio (inmediato si lo pidió; si no, al terminar los 14 días de desistimiento)
+        ▼
+Portal de documentos: datos para la memoria + lista adaptada al caso ──► recordatorios cada 3 días
+        ▼
+Todo aportado ──► "pendiente de revisión" ──► el abogado valida o pide corregir (con motivo, por WhatsApp)
+        ▼
+Todo validado ──► DOCUMENTACIÓN COMPLETA ──► aviso para preparar la solicitud
 ```
 
 Si el lead responde por WhatsApp, se detienen los automatismos comerciales y se avisa a una persona. Si responde **BAJA**, no recibe más mensajes comerciales.
@@ -60,6 +70,7 @@ Si el lead responde por WhatsApp, se detienen los automatismos comerciales y se 
 | `agenda.json` | Horario de consultas, duración, festivos y enlace de videollamada. Por defecto usa salas de Jitsi; para mayor confidencialidad, sustituirlo por la sala propia del despacho (Google Meet, Teams…). |
 | `mensajes.json` | Textos de cada mensaje y nombre de la plantilla de WhatsApp correspondiente. |
 | `captacion.json` | Correspondencia de campos del formulario de Meta, tiempos de seguimiento y nombres de los eventos que se envían a Meta. |
+| `documentos.json` | Documentos que se piden, cuándo (según el cuestionario o los datos del portal), cómo conseguir cada uno, límites de tamaño y frecuencia de recordatorios. |
 
 ## Integraciones
 
@@ -85,12 +96,31 @@ Si el lead responde por WhatsApp, se detienen los automatismos comerciales y se 
 3. Activar tarjeta y adeudo SEPA en el panel de Stripe. La entrada se paga en Checkout guardando el método de pago, y las cuotas se cargan solas en su vencimiento.
 4. **Probar todo el ciclo en modo test de Stripe antes de cobrar a clientes reales**: el código de Stripe se ha probado con respuestas simuladas, no contra la API real.
 
+## Módulo 4 · Recogida de documentos
+
+- **Cuándo se abre:** al empezar el servicio. Si el cliente pidió inicio inmediato, al cobrar la entrada; si no, al terminar el plazo de desistimiento. También se puede abrir a mano desde la ficha del lead.
+- **Lista adaptada al caso**, según el cuestionario y los datos que el cliente rellena en el portal: hipoteca, inmuebles, vehículos, demandas, matrimonio, divorcio, actividad como autónomo o antecedentes.
+- **Datos para la memoria del art. 7.1º TRLC:** domicilio, estado civil, cónyuge o pareja, fecha y régimen económico, situación laboral y causas de la insolvencia.
+- **Seguridad de los archivos:**
+  - se comprueba el formato real del archivo (PDF, JPG, PNG, HEIC o WEBP), no lo que diga el navegador;
+  - límites de tamaño por archivo y por expediente;
+  - cifrado AES-256-GCM en disco con `ARCHIVOS_CLAVE`, y cada descarga desde el panel queda registrada en el historial.
+- **Revisión:** el abogado valida cada documento o pide corregirlo con un motivo, que el cliente recibe por WhatsApp y ve en el portal. El poder del procurador puede validarse sin archivo si se otorgó apud acta.
+- **Fin:** cuando todo está validado, el expediente pasa a *documentación completa*, se paran los recordatorios y se avisa al equipo para preparar la solicitud.
+
+**Importante:** guarda `ARCHIVOS_CLAVE` en un lugar seguro y haz copia de seguridad de `ARCHIVOS_DIR` junto con la base de datos. Sin la clave, los documentos no se pueden recuperar.
+
 ## Base legal aplicada (comprobada en el BOE consolidado)
 
 | Norma | Dónde se aplica |
 |---|---|
 | TRLC arts. 486, 487, 488 y 489 | Semáforo: solo persona natural, excepciones de buena fe, plazos de nueva exoneración, deudas no exonerables y límite de 10.000 € de crédito público (íntegros los primeros 5.000 € y el 50 % del resto) |
 | TRLC art. 510 | La hoja de encargo informa de que el procurador es obligatorio y presupuesta su provisión de fondos |
+| TRLC art. 6.2 | Se pide el poder especial del procurador (notarial o apud acta, también por comparecencia electrónica) |
+| TRLC art. 7 | Datos de la memoria (incluidos cónyuge y régimen económico), documentos para el inventario (cuentas, inmuebles, vehículos) y para la relación de acreedores (contratos, reclamaciones, CIRBE, procedimientos judiciales) |
+| TRLC art. 8 | A los autónomos se les pide la contabilidad si están obligados a llevarla |
+| TRLC art. 45 | Certificado de empadronamiento para acreditar el domicilio que fija el juzgado competente |
+| TRLC art. 501.3 | Declaraciones de la renta de los tres últimos años |
 | EGAE (RD 135/2021) art. 20 | Textos sin promesas de resultado ni incitación al pleito |
 | EGAE art. 48 | Identificación del profesional, viabilidad, honorarios en hoja de encargo, costas e información del asunto |
 | TRLGDCU art. 98.2 | El botón de firma dice "pedido con obligación de pago" y se confirma expresamente la obligación de pago |
@@ -108,6 +138,7 @@ Si el lead responde por WhatsApp, se detienen los automatismos comerciales y se 
 - [ ] `NODE_ENV=production`, `ADMIN_TOKEN` y `APP_SECRET` largos y aleatorios, y `BASE_URL` con https.
 - [ ] Alojamiento en la UE, copias de seguridad diarias de `DB_PATH` y contratos de encargado del tratamiento.
 - [ ] Plantillas de WhatsApp aprobadas, webhooks verificados y un ciclo completo en modo test de Stripe.
+- [ ] Generar `ARCHIVOS_CLAVE` (`openssl rand -base64 32`), guardarla a salvo y revisar los textos de `config/documentos.json` (sobre todo «cómo conseguirlo»).
 - [ ] Decidir la firma: la actual es una firma electrónica simple reforzada con código de un solo uso y evidencias. Si se quiere más fuerza probatoria, integrar un prestador cualificado.
 
 ## Estructura
@@ -117,6 +148,7 @@ src/
   modules/captacion/      formulario web, webhooks y API de Conversiones de Meta
   modules/cualificacion/  semáforo TRLC, agenda, reservas y secuencias automáticas
   modules/contratacion/   hoja de encargo, firma, pagos, cuotas y desistimiento
+  modules/documentos/     expediente, lista de documentos, almacén cifrado y revisión
   messaging/              WhatsApp Cloud API y correo (modo consola sin credenciales)
   jobs/worker.js          tareas programadas con reintentos
   metricas.js             embudo, tasas, velocidad de respuesta y coste por cliente
@@ -127,7 +159,6 @@ test/                     pruebas (node:test)
 
 ## Siguientes módulos
 
-4. Recogida de documentos (portal con lista de documentos y recordatorios).
 5. Preparación del expediente (memoria, inventario y relación de acreedores del art. 7 TRLC a partir de los documentos).
 6. Seguimiento procesal y plazos (arts. 37 ter y 501 TRLC).
 7. Cierre, reseñas y recomendaciones.

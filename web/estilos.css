@@ -112,3 +112,21 @@ td.num, th.num { text-align: right; white-space: nowrap; }
   th, td { padding: 6px 4px; }
   .tarjeta { padding: 16px; }
 }
+.progreso { height: 10px; background: var(--fondo); border: 1px solid var(--borde); border-radius: 999px; overflow: hidden; margin: 12px 0 6px; }
+.progreso-barra { height: 100%; width: 0; background: var(--exito); transition: width .3s; }
+.documentos { display: grid; gap: 14px; }
+.doc { border: 1px solid var(--borde); border-radius: var(--radio); padding: 14px; }
+.doc.validado { border-color: var(--exito); }
+.doc.rechazado { border-color: var(--peligro); }
+.doc-cabecera { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.doc h3 { margin: 0; font-size: 1.02rem; }
+.doc p { margin: 6px 0; }
+.doc details { margin: 6px 0; font-size: .92rem; }
+.doc .archivos { list-style: none; padding: 0; margin: 8px 0; font-size: .9rem; }
+.doc .archivos li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px dashed var(--borde); overflow-wrap: anywhere; }
+.etiqueta { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .78rem; font-weight: 700; border: 1px solid var(--borde); white-space: nowrap; }
+.etiqueta.validado { background: var(--exito); color: #fff; border-color: var(--exito); }
+.etiqueta.subido { background: color-mix(in srgb, var(--marca) 15%, transparent); }
+.etiqueta.rechazado { background: var(--peligro); color: #fff; border-color: var(--peligro); }
+.subida input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.enlace-boton { background: none; border: 0; color: var(--peligro); cursor: pointer; font: inherit; text-decoration: underline; padding: 0; }

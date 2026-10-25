@@ -16,11 +16,16 @@ import {
 } from './modules/contratacion/encargos.js';
 import { cambiarEtapa } from './etapas.js';
 import { calcularMetricas } from './metricas.js';
-import { paginaEncargo, paginaPrivacidad, paginaMensaje } from './paginas.js';
+import { paginaEncargo, paginaPrivacidad, paginaMensaje, paginaExpediente } from './paginas.js';
+import { crearAlmacen } from './modules/documentos/almacen.js';
+import {
+  abrirExpediente, expedienteParaCliente, resumenExpediente, guardarDatos, subirArchivo, eliminarArchivo, revisarDocumento, urlPortal,
+} from './modules/documentos/expedientes.js';
 import { igualSeguro, aCentimos, normalizarTelefono, fechaLarga, escaparHtml } from './util.js';
 
 const PAGINAS_ESTATICAS = { '/admin': 'admin.html' };
-const ESTATICOS = { 'estilos.css': 'text/css; charset=utf-8', 'landing.js': 'text/javascript; charset=utf-8', 'admin.js': 'text/javascript; charset=utf-8', 'reservar.js': 'text/javascript; charset=utf-8', 'encargo.js': 'text/javascript; charset=utf-8' };
+const JS = 'text/javascript; charset=utf-8';
+const ESTATICOS = { 'estilos.css': 'text/css; charset=utf-8', 'landing.js': JS, 'admin.js': JS, 'reservar.js': JS, 'encargo.js': JS, 'expediente.js': JS };
 const ETAPAS_MANUALES = ['contactado', 'cualificado', 'asistio', 'no_asistio', 'perdido', 'descartado', 'nuevo'];
 // Con hoja de encargo firmada, la etapa la gobiernan la firma, los pagos y el desistimiento.
 const ETAPAS_BLOQUEADAS = ['firmado', 'cliente', 'desistido'];
@@ -28,7 +33,7 @@ const ETAPAS_BLOQUEADAS = ['firmado', 'cliente', 'desistido'];
 /**
  * Construye la aplicación. Todas las dependencias externas se pueden inyectar (tests).
  */
-export function construirApp({ config = loadConfig(), store, reloj = () => new Date(), fetchImpl = fetch, mensajeria, pagos, log } = {}) {
+export function construirApp({ config = loadConfig(), store, reloj = () => new Date(), fetchImpl = fetch, mensajeria, pagos, almacen, log } = {}) {
   const app = Fastify({ logger: log === undefined ? { level: config.produccion ? 'info' : 'warn' } : log, trustProxy: true, bodyLimit: 256 * 1024 });
   const ctx = {
     config,
@@ -39,6 +44,7 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
   };
   ctx.mensajeria = mensajeria ?? crearMensajeria({ config, store: ctx.store, log: app.log });
   ctx.pagos = pagos ?? crearPagos(config, { fetchImpl });
+  ctx.almacen = almacen ?? crearAlmacen(config);
   ctx.worker = crearWorker(ctx);
   app.decorate('ctx', ctx);
 
@@ -238,6 +244,36 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
     return { received: true };
   });
 
+  // ---------------- Módulo 4 · Recogida de documentos ----------------
+
+  const limiteSubida = config.documentos.maxMbPorArchivo * 1024 * 1024 + 1024;
+  app.addContentTypeParser(/^(application\/pdf|application\/octet-stream|image\/[\w.+-]+)$/, { parseAs: 'buffer', bodyLimit: limiteSubida }, (req, cuerpo, hecho) => hecho(null, cuerpo));
+
+  app.get('/expediente/:token', async (req, reply) => {
+    const expediente = ctx.store.expedientePorToken(req.params.token);
+    if (!expediente) return html(reply.code(404), paginaMensaje(config, 'Enlace no válido', 'Este enlace no corresponde a ningún expediente.'));
+    return html(reply, paginaExpediente(ctx, expediente));
+  });
+
+  app.get('/api/expedientes/:token', async (req) => resumenExpediente(ctx, expedienteParaCliente(ctx, req.params.token)));
+
+  app.post('/api/expedientes/:token/datos', async (req) => {
+    const resumen = guardarDatos(ctx, req.params.token, req.body);
+    ctx.worker.despertar();
+    return resumen;
+  });
+
+  app.put('/api/expedientes/:token/documentos/:documentoId', { bodyLimit: limiteSubida }, async (req) => {
+    if (!Buffer.isBuffer(req.body)) throw Object.assign(new Error('Envíe el archivo como PDF o imagen.'), { statusCode: 415 });
+    let nombre = 'documento';
+    try { nombre = decodeURIComponent(req.headers['x-nombre-archivo'] ?? 'documento'); } catch { /* nombre por defecto */ }
+    const resumen = await subirArchivo(ctx, req.params.token, req.params.documentoId, { contenido: req.body, nombre });
+    ctx.worker.despertar();
+    return resumen;
+  });
+
+  app.delete('/api/expedientes/:token/archivos/:archivoId', async (req) => eliminarArchivo(ctx, req.params.token, req.params.archivoId));
+
   // ---------------- Panel de administración ----------------
 
   app.register(async (admin) => {
@@ -257,7 +293,9 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
       const encargos = ctx.store.encargosDeLead(lead.id).map(({ documento_html, otp_hash, ...resto }) => ({
         ...resto, url: `${config.baseUrl}/encargo/${resto.token}`, pagos: ctx.store.pagosDeEncargo(resto.id),
       }));
+      const expediente = ctx.store.expedienteDeLead(lead.id);
       return {
+        expediente: expediente ? { id: expediente.id, url: urlPortal(ctx, expediente), ...resumenExpediente(ctx, expediente) } : null,
         lead, eventos: ctx.store.eventos(lead.id), citas: ctx.store.citasDeLead(lead.id), encargos,
         tareas: ctx.store.tareasPendientes(lead.id), salida: ctx.store.salida(lead.id), enlaceReserva: `${config.baseUrl}/reservar/${lead.token_reserva}`,
         etapasManuales: ETAPAS_MANUALES,
@@ -306,6 +344,35 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
     });
 
     admin.get('/salida', async () => ctx.store.salida());
+
+    admin.post('/leads/:id/expediente', async (req, reply) => {
+      const lead = ctx.store.lead(req.params.id);
+      const encargo = lead && ctx.store.encargosDeLead(lead.id).find((e) => e.estado === 'activo');
+      if (!encargo) return reply.code(400).send({ error: 'El lead no tiene un encargo activo (firmado y con la entrada cobrada).' });
+      const expediente = abrirExpediente(ctx, encargo);
+      ctx.worker.despertar();
+      return { ok: true, url: urlPortal(ctx, expediente) };
+    });
+
+    admin.post('/documentos/:id/revision', async (req) => {
+      const documento = revisarDocumento(ctx, req.params.id, { decision: req.body?.decision, motivo: req.body?.motivo });
+      ctx.worker.despertar();
+      return { ok: true, documento };
+    });
+
+    admin.get('/archivos/:id', async (req, reply) => {
+      const archivo = ctx.store.archivo(req.params.id);
+      if (!archivo || archivo.eliminado) return reply.code(404).send({ error: 'No encontrado' });
+      const contenido = await ctx.almacen.leer(archivo);
+      const documento = ctx.store.documento(archivo.documento_id);
+      const expediente = ctx.store.expediente(documento.expediente_id);
+      ctx.store.registrarEvento(expediente.lead_id, 'archivo_consultado', { archivoId: archivo.id });
+      return reply
+        .type(archivo.tipo_mime)
+        .header('Content-Disposition', `${req.query.ver ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(archivo.nombre)}`)
+        .header('Cache-Control', 'no-store')
+        .send(contenido);
+    });
   }, { prefix: '/admin/api' });
 
   app.addHook('onClose', async () => {

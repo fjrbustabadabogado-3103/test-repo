@@ -57,6 +57,12 @@ export function loadConfig(env = process.env, overrides = {}) {
     agenda: leerJson('agenda'),
     mensajes: leerJson('mensajes'),
     captacion: leerJson('captacion'),
+    documentos: leerJson('documentos'),
+    archivos: {
+      directorio: env.ARCHIVOS_DIR ?? join(ROOT, 'data', 'archivos'),
+      // Clave AES-256 en base64 (32 bytes) para cifrar los documentos de los clientes.
+      clave: env.ARCHIVOS_CLAVE ?? '',
+    },
     ...overrides,
   };
   return config;
@@ -72,5 +78,6 @@ export function problemasProduccion(config) {
   if (config.pagos.proveedor === 'simulado') problemas.push('PAGOS_PROVEEDOR=simulado no se permite en producción.');
   if (config.meta.verifyToken && !config.meta.appSecret) problemas.push('META_APP_SECRET es obligatorio si se activa el webhook de Meta.');
   if (config.pagos.proveedor === 'stripe' && !config.pagos.stripeWebhookSecret) problemas.push('STRIPE_WEBHOOK_SECRET es obligatorio con Stripe.');
+  if (Buffer.from(config.archivos.clave, 'base64').length !== 32) problemas.push('ARCHIVOS_CLAVE debe ser una clave de 32 bytes en base64 (openssl rand -base64 32).');
   return problemas;
 }
