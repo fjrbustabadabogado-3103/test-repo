@@ -12,6 +12,15 @@ Aplicación que automatiza el negocio completo, en siete módulos:
 
 Sin credenciales funciona **entero en local**: los WhatsApp y correos se guardan en la bandeja de salida (tabla `salida`) y los pagos son simulados.
 
+## Abrirla en un Mac con doble clic
+
+1. Instala **Node.js** (versión «LTS», 22 o superior) desde https://nodejs.org.
+2. En GitHub, elige la rama `feature/cierre-lso`, pulsa **Code → Download ZIP** y descomprímelo.
+3. Haz doble clic en **`Iniciar.command`**. Se abrirá una ventana de Terminal que la primera vez instala lo necesario (un minuto). Después arranca la herramienta y abre en el navegador la página de captación y el panel del despacho (token `dev-admin`).
+4. Deja esa ventana abierta mientras la uses; para detener la herramienta, ciérrala.
+
+Si es la primera vez, el Mac puede decir que no puede abrirlo porque «procede de un desarrollador no identificado». En ese caso, haz **clic derecho (o Control + clic) sobre `Iniciar.command` → Abrir → Abrir**; solo hace falta una vez. Si dice que no tienes permiso para abrirlo, abre Terminal, escribe `chmod +x ` (con un espacio al final), arrastra el archivo a la ventana y pulsa Enter.
+
 ## Verla en el navegador sin instalar nada (GitHub Codespaces)
 
 1. En GitHub, abre el repositorio y elige la rama más reciente, `feature/cierre-lso`, que incluye los siete módulos.
