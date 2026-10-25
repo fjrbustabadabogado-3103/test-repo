@@ -21,6 +21,15 @@ Sin credenciales funciona **entero en local**: los WhatsApp y correos se guardan
 
 Si es la primera vez, el Mac puede decir que no puede abrirlo porque «procede de un desarrollador no identificado». En ese caso, haz **clic derecho (o Control + clic) sobre `Iniciar.command` → Abrir → Abrir**; solo hace falta una vez. Si dice que no tienes permiso para abrirlo, abre Terminal, escribe `chmod +x ` (con un espacio al final), arrastra el archivo a la ventana y pulsa Enter.
 
+## Abrirla en Windows con doble clic
+
+1. Instala **Node.js** (versión «LTS», 22 o superior) desde https://nodejs.org.
+2. En GitHub, elige la rama `feature/cierre-lso`, pulsa **Code → Download ZIP**, y luego clic derecho sobre el ZIP → **Extraer todo**. Hay que extraerlo: desde dentro del ZIP no funciona.
+3. Haz doble clic en **`Iniciar.bat`**. Se abrirá una ventana negra que la primera vez instala lo necesario (un minuto). Después arranca la herramienta y abre en el navegador la página de captación y el panel del despacho (token `dev-admin`).
+4. Deja esa ventana abierta mientras la uses; para detener la herramienta, ciérrala.
+
+Si Windows muestra «Windows protegió su PC», pulsa **Más información → Ejecutar de todas formas**; solo hace falta la primera vez. Si el firewall pregunta por Node.js, puedes permitir solo las redes privadas.
+
 ## Verla en el navegador sin instalar nada (GitHub Codespaces)
 
 1. En GitHub, abre el repositorio y elige la rama más reciente, `feature/cierre-lso`, que incluye los siete módulos.
@@ -258,6 +267,7 @@ src/
 web/                      páginas públicas y panel
 config/                   reglas de negocio editables
 test/                     pruebas (node:test)
+scripts/                  ayudante de los archivos de arranque (Iniciar.command en Mac, Iniciar.bat en Windows)
 ```
 
 ## Próximos pasos
