@@ -35,6 +35,53 @@
     </section>
   </div>
 
+  <section class="tarjeta" id="seguimiento">
+    <h2>Seguimiento procesal <span class="nota" id="estado-procedimiento"></span></h2>
+    <div class="panel">
+      <div>
+        <h3>Registrar actuación o notificación</h3>
+        <form id="form-actuacion">
+          <div class="rejilla">
+            <label class="campo">Tipo<select name="tipo" required></select></label>
+            <label class="campo">Fecha del acto o de la notificación<input name="fecha" type="date" required></label>
+          </div>
+          <label class="campo">Detalle (opcional)<input name="detalle" maxlength="2000"></label>
+          <div class="rejilla oculto" id="plazo-libre">
+            <label class="campo">Plazo: descripción<input name="plazo_titulo" maxlength="200"></label>
+            <label class="campo">Duración<input name="plazo_cantidad" type="number" min="1" max="366"></label>
+            <label class="campo">Unidad<select name="plazo_unidad"><option value="habiles">Días hábiles</option><option value="meses">Meses</option><option value="naturales">Días naturales</option></select></label>
+            <label class="campo">Norma<input name="plazo_base" maxlength="200" placeholder="p. ej. art. 231 LEC"></label>
+            <label class="casilla"><input type="checkbox" name="plazo_urgente"> Actuación urgente: agosto y Navidad hábiles (art. 133.2 LEC)</label>
+            <label class="casilla"><input type="checkbox" name="plazo_tercero"> Plazo de la otra parte o de terceros</label>
+          </div>
+          <label class="casilla"><input type="checkbox" name="visible"> Informar al cliente</label>
+          <p class="nota">El plazo empieza a correr el día siguiente a la fecha indicada (art. 133.1 LEC). Una notificación electrónica no abierta se entiende hecha a los tres días (art. 162.2 LEC).</p>
+          <p class="estado" id="estado-actuacion" role="status"></p>
+          <button class="boton" type="submit">Registrar</button>
+        </form>
+      </div>
+      <div>
+        <h3>Datos del procedimiento</h3>
+        <form id="form-procedimiento">
+          <label class="campo">Órgano<input name="organo" maxlength="200"></label>
+          <div class="rejilla">
+            <label class="campo">N.º de procedimiento<input name="numero" maxlength="60"></label>
+            <label class="campo">NIG<input name="nig" maxlength="40"></label>
+            <label class="campo">Comunidad autónoma (festivos)<select name="ccaa"></select></label>
+            <label class="campo">Sede (festivos locales)<input name="localidad" maxlength="120"></label>
+          </div>
+          <label class="campo">Festivos locales de la sede (AAAA-MM-DD, separados por comas)<input name="festivos_locales"></label>
+          <p class="estado" id="estado-procedimiento-form" role="status"></p>
+          <button class="boton secundario" type="submit">Guardar y recalcular plazos</button>
+        </form>
+      </div>
+    </div>
+    <h3>Plazos</h3>
+    <div id="plazos" class="documentos"></div>
+    <h3>Actuaciones</h3>
+    <ul class="linea-tiempo" id="actuaciones"></ul>
+  </section>
+
   <section class="tarjeta">
     <h2>Memoria y datos de la solicitud</h2>
     <form id="form-prep">

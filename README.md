@@ -1,12 +1,13 @@
 # Bustabad Abogados · Captación y contratación automatizadas (Ley de Segunda Oportunidad)
 
-Aplicación que automatiza los cinco primeros módulos del negocio:
+Aplicación que automatiza los seis primeros módulos del negocio:
 
 1. **Captación**: formulario web y formularios instantáneos de Meta (Facebook/Instagram), con atribución por campaña y envío de las etapas del CRM a la API de Conversiones de Meta.
 2. **Cualificación y agenda**: semáforo automático basado en el TRLC, respuesta por WhatsApp en segundos, reserva de la consulta online, recordatorios, seguimientos y gestión de ausencias.
 3. **Contratación y cobro**: hoja de encargo generada desde el panel, firma electrónica con código de un solo uso, pago de la entrada (tarjeta o SEPA) y cobro automático de las cuotas.
 4. **Recogida de documentos**: portal del cliente con la lista de documentos adaptada a su caso, subida desde el móvil con almacenamiento cifrado, revisión por el abogado y recordatorios hasta completar el expediente.
 5. **Preparación del expediente**: relación de acreedores e inventario (con extracción opcional por IA que el abogado revisa), indicadores para decidir la vía, comprobaciones antes de presentar y borradores en Word de la memoria, el inventario, la relación de acreedores y la solicitud de concurso.
+6. **Seguimiento procesal y plazos**: actuaciones del procedimiento, cálculo de plazos procesales con el calendario oficial, alertas escalonadas, agenda de plazos con suscripción desde Google Calendar u Outlook e información al cliente.
 
 Sin credenciales funciona **entero en local**: los WhatsApp y correos se guardan en la bandeja de salida (tabla `salida`) y los pagos son simulados.
 
@@ -27,7 +28,7 @@ Requisitos: Node.js 22.13 o superior (usa el SQLite integrado de Node; no hay de
 npm install
 cp .env.example .env      # rellenar según la sección "Integraciones"
 npm start                 # http://localhost:3000
-npm test                  # 42 pruebas: reglas, agenda, pagos, firmas, documentos, preparación y flujo completo
+npm test                  # 49 pruebas: reglas, agenda, pagos, firmas, documentos, preparación, plazos y flujo completo
 ```
 
 Las variables de entorno se leen del entorno del proceso. Para usar el fichero `.env` en local: `node --env-file=.env src/index.js`.
@@ -137,6 +138,29 @@ Desde la ficha del lead, «Preparar expediente» abre la pantalla de trabajo del
 - **Borradores en Word:** memoria, inventario, relación de acreedores y solicitud de concurso dirigida a la Sección de lo Mercantil del Tribunal de Instancia de la capital de provincia (art. 87.1 y 87.7 LOPJ, redacción de la LO 1/2025). Son borradores para revisar.
   - No he encontrado en el BOE el modelo oficial de solicitud que menciona el art. 6.2 TRLC; el borrador avisa de que hay que comprobar si debe usarse.
 
+## Módulo 6 · Seguimiento procesal y plazos
+
+En la pantalla del expediente, sección «Seguimiento procesal»:
+
+- **Registrar actuaciones:** presentación de la solicitud, auto de declaración, edicto, solicitud o informe del administrador concursal, presentación y traslado de la exoneración, resolución o cualquier notificación con plazo. Cada actuación cambia el estado del procedimiento y genera, cancela o da por cumplidos los plazos que correspondan (catálogo en `config/procesal.json`).
+- **Plazos automáticos del concurso sin masa:**
+  - con el edicto se crea el de los acreedores (15 días hábiles, art. 37 ter.1 TRLC);
+  - encadenado a él, el nuestro para pedir la exoneración (10 días hábiles, art. 501.1 TRLC);
+  - si un acreedor pide administrador concursal, se cancela el nuestro, y con el informe del administrador se vuelve a crear desde ese momento.
+- **Cómputo según la LEC:**
+  - días inhábiles: sábados, domingos, del 24 de diciembre al 6 de enero, agosto, fiestas nacionales y festivos autonómicos y locales (art. 130.2);
+  - el plazo empieza el día siguiente; los plazos encadenados, el día siguiente al vencimiento del anterior; los meses van de fecha a fecha; un vencimiento en día inhábil pasa al siguiente hábil; en actuaciones urgentes, agosto y Navidad son hábiles (art. 133);
+  - el límite para presentar es las 15:00 del día hábil siguiente al vencimiento (art. 135.5).
+- **Festivos:**
+  - la aplicación calcula sola las fiestas nacionales no sustituibles del art. 45.1 del RD 2001/1983, incluido el Viernes Santo;
+  - los festivos autonómicos de cada año van en `config/calendario.json` (fuentes en el BOE: BOE-A-2025-21667 para 2026 y BOE-A-2026-21254 para 2027) y los locales, en cada procedimiento;
+  - mientras falten, cada plazo afectado muestra «verificar» y, al cargarlos, los plazos pendientes se recalculan.
+- **Alertas:** cada mañana a las 08:00 se avisa al equipo de los plazos propios a 5, 2 y 1 días hábiles y el mismo día del vencimiento, cada aviso una sola vez. Un plazo vencido se marca como tal y se avisa con el límite de presentación del art. 135.5. Cuando termina un plazo de terceros, se avisa para comprobar si hubo escritos.
+- **Agenda y calendario:** el panel principal muestra todos los plazos pendientes del despacho y una dirección `.ics` para suscribirse desde Google Calendar u Outlook, con alarma dos días antes de los plazos propios.
+- **Cliente:** las actuaciones marcadas «Informar al cliente» le llegan por WhatsApp o correo y aparecen en su portal con un estado explicado sin tecnicismos (art. 48.5 EGAE).
+
+**Importante:** el cómputo es una ayuda. El letrado debe confirmar cada vencimiento, en especial mientras falten festivos por cargar o cuando la notificación se haya producido por el transcurso de tres días sin acceso (art. 162.2 LEC).
+
 **Protección de datos:** la extracción con IA envía documentos del cliente a Anthropic. Antes de activarla, firma el contrato de encargado del tratamiento (art. 28 RGPD) y revisa sus condiciones de conservación de datos.
 
 **Importante:** guarda `ARCHIVOS_CLAVE` en un lugar seguro y haz copia de seguridad de `ARCHIVOS_DIR` junto con la base de datos. Sin la clave, los documentos no se pueden recuperar.
@@ -153,6 +177,9 @@ Desde la ficha del lead, «Preparar expediente» abre la pantalla de trabajo del
 | TRLC art. 45 | Certificado de empadronamiento para acreditar el domicilio que fija el juzgado competente |
 | TRLC art. 501.3 | Declaraciones de la renta de los tres últimos años |
 | TRLC arts. 1, 2, 3, 44, 270 y 280 | Borrador de solicitud (presupuestos, insolvencia actual, legitimación, competencia) y clases de crédito que elige el abogado |
+| LEC arts. 130, 133, 135 y 162; LOPJ art. 183 | Días inhábiles, cómputo de plazos, presentación hasta las 15:00 del día siguiente y notificaciones electrónicas |
+| RD 2001/1983 art. 45 | Fiestas nacionales no sustituibles que la aplicación calcula sola |
+| TRLC arts. 37 ter y 501 | Plazos del concurso sin masa: llamamiento a los acreedores, solicitud de exoneración y alegaciones |
 | LOPJ art. 87 (LO 1/2025) | La solicitud se dirige a la Sección de lo Mercantil del Tribunal de Instancia de la capital de provincia, con las excepciones de los apartados 2, 3 y 4 |
 | EGAE (RD 135/2021) art. 20 | Textos sin promesas de resultado ni incitación al pleito |
 | EGAE art. 48 | Identificación del profesional, viabilidad, honorarios en hoja de encargo, costas e información del asunto |
@@ -172,6 +199,7 @@ Desde la ficha del lead, «Preparar expediente» abre la pantalla de trabajo del
 - [ ] Alojamiento en la UE, copias de seguridad diarias de `DB_PATH` y contratos de encargado del tratamiento.
 - [ ] Plantillas de WhatsApp aprobadas, webhooks verificados y un ciclo completo en modo test de Stripe.
 - [ ] Generar `ARCHIVOS_CLAVE` (`openssl rand -base64 32`), guardarla a salvo y revisar los textos de `config/documentos.json` (sobre todo «cómo conseguirlo»).
+- [ ] Cargar en `config/calendario.json` los festivos autonómicos de cada año e indicar en cada procedimiento los festivos locales de la sede del juzgado.
 - [ ] Decidir la firma: la actual es una firma electrónica simple reforzada con código de un solo uso y evidencias. Si se quiere más fuerza probatoria, integrar un prestador cualificado.
 
 ## Estructura
@@ -183,6 +211,7 @@ src/
   modules/contratacion/   hoja de encargo, firma, pagos, cuotas y desistimiento
   modules/documentos/     expediente, lista de documentos, almacén cifrado y revisión
   modules/preparacion/    acreedores, bienes, indicadores, extracción con IA y borradores en Word
+  modules/seguimiento/    procedimiento, actuaciones, cómputo de plazos, alertas y calendario .ics
   messaging/              WhatsApp Cloud API y correo (modo consola sin credenciales)
   jobs/worker.js          tareas programadas con reintentos
   metricas.js             embudo, tasas, velocidad de respuesta y coste por cliente
@@ -193,5 +222,4 @@ test/                     pruebas (node:test)
 
 ## Siguientes módulos
 
-6. Seguimiento procesal y plazos (arts. 37 ter y 501 TRLC).
 7. Cierre, reseñas y recomendaciones.

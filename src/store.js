@@ -234,6 +234,57 @@ CREATE TABLE IF NOT EXISTS extracciones (
   resumen TEXT
 );
 CREATE INDEX IF NOT EXISTS extracciones_expediente ON extracciones(expediente_id);
+
+CREATE TABLE IF NOT EXISTS procedimientos (
+  id TEXT PRIMARY KEY,
+  expediente_id TEXT NOT NULL UNIQUE REFERENCES expedientes(id),
+  organo TEXT,
+  numero TEXT,
+  nig TEXT,
+  ccaa TEXT,
+  localidad TEXT,
+  festivos_locales TEXT NOT NULL DEFAULT '[]',
+  estado TEXT NOT NULL,
+  notas TEXT,
+  creado TEXT NOT NULL,
+  actualizado TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS actuaciones (
+  id TEXT PRIMARY KEY,
+  procedimiento_id TEXT NOT NULL REFERENCES procedimientos(id),
+  tipo TEXT NOT NULL,
+  fecha TEXT NOT NULL,
+  titulo TEXT NOT NULL,
+  detalle TEXT,
+  visible_cliente INTEGER NOT NULL DEFAULT 0,
+  creado TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS actuaciones_procedimiento ON actuaciones(procedimiento_id);
+
+CREATE TABLE IF NOT EXISTS plazos (
+  id TEXT PRIMARY KEY,
+  procedimiento_id TEXT NOT NULL REFERENCES procedimientos(id),
+  actuacion_id TEXT REFERENCES actuaciones(id),
+  clave TEXT NOT NULL,
+  titulo TEXT NOT NULL,
+  base TEXT,
+  parte TEXT NOT NULL,
+  dies_a_quo TEXT NOT NULL,
+  cantidad INTEGER NOT NULL,
+  unidad TEXT NOT NULL,
+  urgente INTEGER NOT NULL DEFAULT 0,
+  encadenado_a TEXT,
+  vence TEXT NOT NULL,
+  limite_presentacion TEXT,
+  avisos_calendario TEXT NOT NULL DEFAULT '[]',
+  estado TEXT NOT NULL,
+  cumplido TEXT,
+  notas TEXT,
+  alertas_enviadas TEXT NOT NULL DEFAULT '[]',
+  creado TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS plazos_estado ON plazos(estado, vence);
 `;
 
 export const ETAPAS = [
@@ -717,6 +768,80 @@ export class Store {
     this.db.prepare('UPDATE extracciones SET estado = ?, error = ?, resumen = ?, terminado = ? WHERE id = ?')
       .run(estado, error, resumen == null ? null : JSON.stringify(resumen), this.ahora(), id);
     return this.extraccion(id);
+  }
+
+  // ---------- Seguimiento procesal (módulo 6) ----------
+
+  crearProcedimiento(datos) {
+    const ahora = this.ahora();
+    const id = nuevoId();
+    this.db.prepare(`INSERT INTO procedimientos (id, expediente_id, organo, numero, nig, ccaa, localidad, festivos_locales, estado, notas, creado, actualizado)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, datos.expediente_id, datos.organo ?? null, datos.numero ?? null, datos.nig ?? null,
+      datos.ccaa ?? null, datos.localidad ?? null, JSON.stringify(datos.festivos_locales ?? []), datos.estado ?? 'preparado', datos.notas ?? null, ahora, ahora);
+    return this.procedimiento(id);
+  }
+
+  procedimiento(id) {
+    return filaJson(this.db.prepare('SELECT * FROM procedimientos WHERE id = ?').get(id), ['festivos_locales']);
+  }
+
+  procedimientoDeExpediente(expedienteId) {
+    return filaJson(this.db.prepare('SELECT * FROM procedimientos WHERE expediente_id = ?').get(expedienteId), ['festivos_locales']);
+  }
+
+  actualizarProcedimiento(id, cambios) {
+    const columnas = Object.keys(cambios);
+    const valores = columnas.map((c) => (c === 'festivos_locales' ? JSON.stringify(cambios[c]) : cambios[c] ?? null));
+    this.db.prepare(`UPDATE procedimientos SET ${columnas.map((c) => `${c} = ?`).join(', ')}, actualizado = ? WHERE id = ?`).run(...valores, this.ahora(), id);
+    return this.procedimiento(id);
+  }
+
+  crearActuacion(datos) {
+    const id = nuevoId();
+    this.db.prepare('INSERT INTO actuaciones (id, procedimiento_id, tipo, fecha, titulo, detalle, visible_cliente, creado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(id, datos.procedimiento_id, datos.tipo, datos.fecha, datos.titulo, datos.detalle ?? null, datos.visible_cliente ? 1 : 0, this.ahora());
+    return this.actuacion(id);
+  }
+
+  actuacion(id) {
+    const fila = this.db.prepare('SELECT * FROM actuaciones WHERE id = ?').get(id);
+    return fila ? { ...fila, visible_cliente: Boolean(fila.visible_cliente) } : null;
+  }
+
+  actuacionesDeProcedimiento(procedimientoId) {
+    return this.db.prepare('SELECT * FROM actuaciones WHERE procedimiento_id = ? ORDER BY fecha, creado').all(procedimientoId)
+      .map((f) => ({ ...f, visible_cliente: Boolean(f.visible_cliente) }));
+  }
+
+  crearPlazo(datos) {
+    const id = nuevoId();
+    this.db.prepare(`INSERT INTO plazos (id, procedimiento_id, actuacion_id, clave, titulo, base, parte, dies_a_quo, cantidad, unidad, urgente, encadenado_a,
+      vence, limite_presentacion, avisos_calendario, estado, notas, creado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      id, datos.procedimiento_id, datos.actuacion_id ?? null, datos.clave, datos.titulo, datos.base ?? null, datos.parte, datos.dies_a_quo, datos.cantidad,
+      datos.unidad, datos.urgente ? 1 : 0, datos.encadenado_a ?? null, datos.vence, datos.limite_presentacion ?? null,
+      JSON.stringify(datos.avisos_calendario ?? []), datos.estado ?? 'pendiente', datos.notas ?? null, this.ahora(),
+    );
+    return this.plazo(id);
+  }
+
+  plazo(id) {
+    const fila = filaJson(this.db.prepare('SELECT * FROM plazos WHERE id = ?').get(id), ['avisos_calendario', 'alertas_enviadas']);
+    return fila ? { ...fila, urgente: Boolean(fila.urgente) } : null;
+  }
+
+  plazosDeProcedimiento(procedimientoId) {
+    return this.db.prepare('SELECT id FROM plazos WHERE procedimiento_id = ? ORDER BY vence, creado').all(procedimientoId).map((f) => this.plazo(f.id));
+  }
+
+  plazosPendientes() {
+    return this.db.prepare("SELECT id FROM plazos WHERE estado = 'pendiente' ORDER BY vence").all().map((f) => this.plazo(f.id));
+  }
+
+  actualizarPlazo(id, cambios) {
+    const columnas = Object.keys(cambios);
+    const valores = columnas.map((c) => (['avisos_calendario', 'alertas_enviadas'].includes(c) ? JSON.stringify(cambios[c]) : typeof cambios[c] === 'boolean' ? (cambios[c] ? 1 : 0) : cambios[c] ?? null));
+    this.db.prepare(`UPDATE plazos SET ${columnas.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`).run(...valores, id);
+    return this.plazo(id);
   }
 
   cerrar() {

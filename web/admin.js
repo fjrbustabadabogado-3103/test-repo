@@ -58,6 +58,25 @@
     $('kpis').replaceChildren(...kpis.map(([etiqueta, valor]) => el('div', { className: 'kpi' }, el('div', { className: 'valor', textContent: String(valor) }), el('div', { className: 'etiqueta', textContent: etiqueta }))));
   }
 
+  async function cargarPlazos() {
+    const { plazos, calendario } = await api('/plazos');
+    $('url-calendario').textContent = calendario;
+    if (plazos.length === 0) {
+      $('plazos').replaceChildren(el('tr', {}, el('td', { colSpan: 5, textContent: 'No hay plazos pendientes.' })));
+      return;
+    }
+    $('plazos').replaceChildren(...plazos.slice(0, 30).map((p) => {
+      const nivel = p.restantes <= 1 ? 'rojo' : p.restantes <= 5 ? 'amarillo' : 'verde';
+      const quedan = p.restantes < 0 ? 'vencido' : p.restantes === 0 ? 'hoy' : `${p.restantes} hábiles`;
+      return el('tr', {},
+        el('td', { textContent: p.vence, style: 'white-space: nowrap' }),
+        el('td', {}, el('span', { className: `chip ${p.parte === 'nuestro' ? nivel : ''}`, textContent: p.parte === 'nuestro' ? quedan : `terceros · ${quedan}` })),
+        el('td', {}, p.titulo, (p.avisos_calendario ?? []).length ? el('span', { className: 'nota', textContent: ' · verificar calendario' }) : null),
+        el('td', {}, el('a', { href: `/admin/expediente/${p.expedienteId}#seguimiento`, textContent: p.cliente ?? '(sin nombre)' })),
+        el('td', { textContent: [p.organo, p.numero].filter(Boolean).join(' · ') || '—' }));
+    }));
+  }
+
   async function cargarLeads() {
     const params = new URLSearchParams();
     if ($('filtro-semaforo').value) params.set('semaforo', $('filtro-semaforo').value);
@@ -214,7 +233,7 @@
   async function iniciar() {
     $('acceso').classList.add('oculto');
     $('app').classList.remove('oculto');
-    await Promise.all([cargarMetricas(), cargarLeads()]);
+    await Promise.all([cargarMetricas(), cargarLeads(), cargarPlazos()]);
     if (leadActivo) await abrirLead(leadActivo).catch(() => {});
   }
 

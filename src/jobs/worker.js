@@ -4,6 +4,9 @@ import { registrarLead, leadDesdeMeta } from '../modules/captacion/intake.js';
 import { registrarPagoCobrado, registrarPagoFallido } from '../modules/contratacion/encargos.js';
 import { abrirExpediente, recordarDocumentos } from '../modules/documentos/expedientes.js';
 import { ejecutarExtraccion } from '../modules/preparacion/preparacion.js';
+import { revisarPlazos, hoyEnZona } from '../modules/seguimiento/procedimientos.js';
+import { localAUtc } from '../modules/cualificacion/agenda.js';
+import { sumarDiasIso } from '../modules/seguimiento/calendario.js';
 import { sumarDias, sumarMinutos } from '../util.js';
 
 const MAX_INTENTOS = 6;
@@ -74,6 +77,12 @@ function crearManejadores(ctx) {
       return ejecutarExtraccion(ctx, tarea.datos.extraccionId, tarea.intentos);
     },
 
+    async revisar_plazos() {
+      const alertas = revisarPlazos(ctx);
+      ctx.store.programar('revisar_plazos', localAUtc(sumarDiasIso(hoyEnZona(ctx), 1), '08:00', ctx.config.agenda.zona));
+      return `alertas:${alertas}`;
+    },
+
     async purga_rgpd() {
       const meses = ctx.config.despacho.protegerDatos.plazoConservacionLeadsMeses ?? 12;
       const antesDe = sumarDias(ctx.reloj(), -30 * meses).toISOString();
@@ -131,6 +140,7 @@ export function crearWorker(ctx) {
     },
     iniciar(intervaloMs) {
       if (!ctx.store.hayTareaPendiente('purga_rgpd')) ctx.store.programar('purga_rgpd', ctx.reloj());
+      if (!ctx.store.hayTareaPendiente('revisar_plazos')) ctx.store.programar('revisar_plazos', ctx.reloj());
       temporizador = setInterval(() => this.procesar().catch((e) => ctx.log.error?.(e)), intervaloMs);
       temporizador.unref?.();
     },

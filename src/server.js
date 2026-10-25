@@ -26,6 +26,10 @@ import {
 } from './modules/preparacion/preparacion.js';
 import { crearClienteIa } from './modules/preparacion/extraccion.js';
 import { generarDocumento } from './modules/preparacion/documentos-word.js';
+import {
+  resumenSeguimiento, actualizarDatosProcedimiento, registrarActuacion, marcarPlazo, agendaPlazos, seguimientoParaCliente,
+  icsPlazos, claveCalendario, claveCalendarioValida,
+} from './modules/seguimiento/procedimientos.js';
 import { igualSeguro, aCentimos, normalizarTelefono, fechaLarga, escaparHtml } from './util.js';
 
 const PAGINAS_ESTATICAS = { '/admin': 'admin.html', '/admin/expediente/:id': 'admin-expediente.html' };
@@ -261,7 +265,17 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
     return html(reply, paginaExpediente(ctx, expediente));
   });
 
-  app.get('/api/expedientes/:token', async (req) => resumenExpediente(ctx, expedienteParaCliente(ctx, req.params.token)));
+  app.get('/api/expedientes/:token', async (req) => {
+    const expediente = expedienteParaCliente(ctx, req.params.token);
+    return { ...resumenExpediente(ctx, expediente), seguimiento: seguimientoParaCliente(ctx, expediente) };
+  });
+
+  // ---------------- Módulo 6 · Calendario de plazos (suscripción desde Google Calendar u Outlook) ----------------
+
+  app.get('/calendario/plazos.ics', async (req, reply) => {
+    if (!claveCalendarioValida(ctx, req.query.clave)) return reply.code(404).send('No encontrado');
+    return reply.type('text/calendar; charset=utf-8').header('Cache-Control', 'no-store').send(icsPlazos(ctx));
+  });
 
   app.post('/api/expedientes/:token/datos', async (req) => {
     const resumen = guardarDatos(ctx, req.params.token, req.body);
@@ -396,6 +410,27 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
         .header('Cache-Control', 'no-store')
         .send(contenido);
     });
+
+    // ---- Módulo 6 · Seguimiento procesal y plazos ----
+    admin.get('/expedientes/:id/seguimiento', async (req) => resumenSeguimiento(ctx, req.params.id));
+
+    admin.put('/expedientes/:id/procedimiento', async (req) => {
+      actualizarDatosProcedimiento(ctx, req.params.id, req.body);
+      return resumenSeguimiento(ctx, req.params.id);
+    });
+
+    admin.post('/expedientes/:id/actuaciones', async (req) => {
+      registrarActuacion(ctx, req.params.id, req.body);
+      ctx.worker.despertar();
+      return resumenSeguimiento(ctx, req.params.id);
+    });
+
+    admin.post('/plazos/:id', async (req) => marcarPlazo(ctx, req.params.id, { estado: req.body?.estado, notas: req.body?.notas }));
+
+    admin.get('/plazos', async () => ({
+      plazos: agendaPlazos(ctx),
+      calendario: `${config.baseUrl}/calendario/plazos.ics?clave=${claveCalendario(ctx)}`,
+    }));
 
     admin.post('/documentos/:id/revision', async (req) => {
       const documento = revisarDocumento(ctx, req.params.id, { decision: req.body?.decision, motivo: req.body?.motivo });

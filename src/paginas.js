@@ -114,6 +114,11 @@ export function paginaExpediente(ctx, expediente) {
 <div class="progreso" aria-hidden="true"><div class="progreso-barra" id="barra"></div></div>
 <p class="estado" id="estado-general" role="status">Cargando…</p>
 </section>
+<section class="tarjeta oculto" id="bloque-seguimiento">
+<h2>Estado de su procedimiento</h2>
+<p class="subtitulo" id="estado-procedimiento"></p>
+<ul class="linea-tiempo" id="actuaciones-cliente"></ul>
+</section>
 <section class="tarjeta" id="bloque-datos">
 <h2>1. Sus datos</h2>
 <p class="nota">Los necesitamos para la memoria que acompaña a la solicitud y para saber qué documentos le corresponden.</p>

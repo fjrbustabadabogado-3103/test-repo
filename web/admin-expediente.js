@@ -186,9 +186,107 @@
     $('nuevo-bien').disabled = Boolean(prep.listo);
   }
 
+  let seguimiento = null;
+
+  function pintarSeguimiento() {
+    const s = seguimiento;
+    $('estado-procedimiento').textContent = s.estadoTexto ? `· ${s.estadoTexto}` : '· sin presentar';
+    const tipo = $('form-actuacion').elements.tipo;
+    if (!tipo.options.length) {
+      for (const [clave, def] of Object.entries(s.catalogo)) tipo.add(new Option(def.titulo, clave));
+      tipo.addEventListener('change', () => $('plazo-libre').classList.toggle('oculto', !seguimiento.catalogo[tipo.value]?.plazoLibre));
+      $('form-actuacion').elements.fecha.value = new Date().toISOString().slice(0, 10);
+    }
+    const ccaa = $('form-procedimiento').elements.ccaa;
+    if (!ccaa.options.length) {
+      ccaa.add(new Option('Elija…', ''));
+      for (const c of s.comunidades) ccaa.add(new Option(c, c));
+    }
+    const p = s.procedimiento ?? {};
+    const fp = $('form-procedimiento').elements;
+    fp.organo.value = p.organo ?? datos?.preparacion?.tribunal ?? '';
+    fp.numero.value = p.numero ?? '';
+    fp.nig.value = p.nig ?? '';
+    fp.ccaa.value = p.ccaa ?? '';
+    fp.localidad.value = p.localidad ?? '';
+    fp.festivos_locales.value = (p.festivos_locales ?? []).join(', ');
+
+    const ESTADO_PLAZO = { pendiente: 'Pendiente', cumplido: 'Cumplido', cancelado: 'Cancelado', vencido: 'VENCIDO', transcurrido: 'Transcurrido' };
+    $('plazos').replaceChildren(...(s.plazos.length ? s.plazos.map((pl) => {
+      const nivel = pl.estado !== 'pendiente' ? '' : pl.restantes <= 1 ? 'rechazado' : pl.restantes <= 5 ? 'subido' : 'validado';
+      const quedan = pl.estado === 'pendiente' ? (pl.restantes === 0 ? 'vence hoy' : `${pl.restantes} días hábiles`) : ESTADO_PLAZO[pl.estado];
+      const acciones = el('div', {});
+      const boton = (texto, estado) => {
+        const b = el('button', { className: 'boton pequeno secundario', type: 'button', textContent: texto });
+        b.addEventListener('click', async () => {
+          await api(`/plazos/${pl.id}`, { method: 'POST', body: JSON.stringify({ estado }) }).catch((error) => alert(error.message));
+          await cargarSeguimiento();
+        });
+        return b;
+      };
+      if (pl.estado === 'pendiente' || pl.estado === 'vencido') acciones.append(boton('Cumplido', 'cumplido'), ' ', boton('Cancelar', 'cancelado'));
+      else acciones.append(boton('Reabrir', 'pendiente'));
+      return el('article', { className: `doc ${nivel}` },
+        el('div', { className: 'doc-cabecera' },
+          el('h3', { textContent: `${pl.parte === 'nuestro' ? '' : '(Terceros) '}${pl.titulo}` }),
+          el('span', { className: `insignia ${nivel}`, textContent: quedan })),
+        el('p', { textContent: `Vence el ${pl.vence} · ${pl.cantidad} ${pl.unidad === 'habiles' ? 'días hábiles' : pl.unidad} desde ${pl.dies_a_quo}${pl.encadenado_a ? ' (encadenado al plazo anterior)' : ''} · ${pl.base ?? ''}` }),
+        pl.parte === 'nuestro' ? el('p', { className: 'nota', textContent: `Presentación posible hasta las 15:00 del ${pl.limite_presentacion} (art. 135.5 LEC).` }) : null,
+        ...(pl.avisos_calendario ?? []).map((a) => el('p', { className: 'aviso', textContent: a })),
+        acciones);
+    }) : [el('p', { className: 'nota', textContent: 'Sin plazos todavía.' })]));
+
+    $('actuaciones').replaceChildren(...[...s.actuaciones].reverse().map((a) => el('li', {},
+      el('span', { className: 'fecha', textContent: `${a.fecha}${a.visible_cliente ? ' · comunicado al cliente' : ''}` }),
+      el('strong', { textContent: a.titulo }), a.detalle ? ` · ${a.detalle}` : '')));
+  }
+
+  async function cargarSeguimiento() {
+    seguimiento = await api(`/expedientes/${expedienteId}/seguimiento`);
+    pintarSeguimiento();
+  }
+
+  $('form-actuacion').addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    const f = evento.target.elements;
+    const estado = $('estado-actuacion');
+    const cuerpo = { tipo: f.tipo.value, fecha: f.fecha.value, detalle: f.detalle.value, visibleCliente: f.visible.checked };
+    if (seguimiento.catalogo[f.tipo.value]?.plazoLibre && f.plazo_cantidad.value) {
+      cuerpo.plazo = {
+        titulo: f.plazo_titulo.value, cantidad: Number(f.plazo_cantidad.value), unidad: f.plazo_unidad.value, base: f.plazo_base.value,
+        urgente: f.plazo_urgente.checked, parte: f.plazo_tercero.checked ? 'tercero' : 'nuestro',
+      };
+    }
+    try {
+      seguimiento = await api(`/expedientes/${expedienteId}/actuaciones`, { method: 'POST', body: JSON.stringify(cuerpo) });
+      pintarSeguimiento();
+      estado.textContent = 'Actuación registrada.';
+      estado.className = 'estado ok';
+      f.detalle.value = '';
+    } catch (error) {
+      estado.textContent = error.message;
+      estado.className = 'estado error';
+    }
+  });
+
+  $('form-procedimiento').addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    const estado = $('estado-procedimiento-form');
+    try {
+      seguimiento = await api(`/expedientes/${expedienteId}/procedimiento`, { method: 'PUT', body: JSON.stringify(Object.fromEntries(new FormData(evento.target))) });
+      pintarSeguimiento();
+      estado.textContent = 'Guardado. Plazos recalculados.';
+      estado.className = 'estado ok';
+    } catch (error) {
+      estado.textContent = error.message;
+      estado.className = 'estado error';
+    }
+  });
+
   async function cargar() {
     datos = await api(`/expedientes/${expedienteId}/preparacion`);
     pintar();
+    await cargarSeguimiento();
   }
 
   $('form-prep').addEventListener('submit', async (evento) => {

@@ -217,5 +217,16 @@
     "parametros": [
       "nombre"
     ]
+  },
+  "novedad_procedimiento": {
+    "comercial": false,
+    "asunto": "Novedad en su procedimiento",
+    "texto": "Hola {{nombre}}, hay novedades en su procedimiento: {{novedad}} Puede ver el estado en: {{enlace_documentos}}",
+    "whatsapp": "lso_novedad_procedimiento",
+    "parametros": [
+      "nombre",
+      "novedad",
+      "enlace_documentos"
+    ]
   }
 }

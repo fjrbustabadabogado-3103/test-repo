@@ -138,7 +138,17 @@
     }
   });
 
+  function pintarSeguimiento(seguimiento) {
+    if (!seguimiento) return;
+    $('bloque-seguimiento').classList.remove('oculto');
+    $('estado-procedimiento').textContent = seguimiento.estado;
+    const formato = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    $('actuaciones-cliente').replaceChildren(...[...seguimiento.actuaciones].reverse().map((a) => el('li', {},
+      el('span', { className: 'fecha', textContent: formato.format(new Date(`${a.fecha}T00:00:00Z`)) }), a.titulo)));
+  }
+
   llamar('GET', '').then((resumen) => {
+    pintarSeguimiento(resumen.seguimiento);
     rellenarDatos(resumen.datos);
     mostrarConyuge();
     pintar(resumen);
