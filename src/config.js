@@ -18,10 +18,15 @@ function lista(valor) {
  */
 export function loadConfig(env = process.env, overrides = {}) {
   const produccion = env.NODE_ENV === 'production';
+  const port = Number(env.PORT ?? 3000);
+  // En GitHub Codespaces, los enlaces deben usar la dirección pública del puerto reenviado.
+  const urlPorDefecto = env.CODESPACE_NAME
+    ? `https://${env.CODESPACE_NAME}-${port}.${env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN ?? 'app.github.dev'}`
+    : `http://localhost:${port}`;
   const config = {
     produccion,
-    port: Number(env.PORT ?? 3000),
-    baseUrl: (env.BASE_URL ?? 'http://localhost:3000').replace(/\/$/, ''),
+    port,
+    baseUrl: (env.BASE_URL ?? urlPorDefecto).replace(/\/$/, ''),
     dbPath: env.DB_PATH ?? join(ROOT, 'data', 'crm.sqlite'),
     adminToken: env.ADMIN_TOKEN || (produccion ? '' : 'dev-admin'),
     appSecret: env.APP_SECRET || (produccion ? '' : 'dev-secret'),

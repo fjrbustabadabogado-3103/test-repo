@@ -9,6 +9,15 @@ Aplicación que automatiza los cuatro primeros módulos del negocio:
 
 Sin credenciales funciona **entero en local**: los WhatsApp y correos se guardan en la bandeja de salida (tabla `salida`) y los pagos son simulados.
 
+## Verla en el navegador sin instalar nada (GitHub Codespaces)
+
+1. En GitHub, abre el repositorio y elige la rama `feature/documentos-lso`.
+2. Pulsa **Code → Codespaces → Create codespace on feature/documentos-lso**.
+3. Espera 1 o 2 minutos: se instala y arranca sola, y se abre una pestaña con la aplicación. Si no se abre, ve a la pestaña **Ports** y pulsa el globo del puerto 3000.
+4. Panel del despacho: añade `/admin` a la dirección y entra con el token `dev-admin`.
+
+Los mensajes de WhatsApp y correo no se envían de verdad: se ven en el panel, en la ficha de cada lead («Mensajes enviados»). Los pagos son simulados. Cuando termines, para el codespace desde github.com/codespaces para no consumir horas.
+
 ## Puesta en marcha
 
 Requisitos: Node.js 22.13 o superior (usa el SQLite integrado de Node; no hay dependencias nativas).
