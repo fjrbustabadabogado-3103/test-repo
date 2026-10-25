@@ -105,7 +105,7 @@
     return el('article', { className: `doc ${documento.estado}` },
       el('div', { className: 'doc-cabecera' },
         el('h3', { textContent: `${documento.titulo}${documento.obligatorio ? '' : ' (opcional)'}` }),
-        el('span', { className: `etiqueta ${documento.estado}`, textContent: ETIQUETAS[documento.estado] ?? documento.estado })),
+        el('span', { className: `insignia ${documento.estado}`, textContent: ETIQUETAS[documento.estado] ?? documento.estado })),
       documento.motivoRechazo ? el('p', { className: 'aviso', textContent: `Motivo: ${documento.motivoRechazo}` }) : null,
       el('p', { textContent: documento.descripcion ?? '' }),
       documento.comoObtenerlo ? el('details', {}, el('summary', { textContent: 'Cómo conseguirlo' }), el('p', { textContent: documento.comoObtenerlo })) : null,

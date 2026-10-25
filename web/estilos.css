@@ -93,9 +93,9 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .chip.verde { background: var(--verde); }
 .chip.amarillo { background: var(--amarillo); color: #1d2433; }
 .chip.rojo { background: var(--rojo); }
-.kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 20px; }
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 20px; }
 .kpi { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 14px; }
-.kpi .valor { font-size: 1.6rem; font-weight: 700; }
+.kpi .valor { font-size: clamp(1.15rem, 1.8vw, 1.5rem); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kpi .etiqueta { color: var(--texto-suave); font-size: .85rem; }
 .panel { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 980px) { .panel { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); } }
@@ -124,9 +124,9 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .doc details { margin: 6px 0; font-size: .92rem; }
 .doc .archivos { list-style: none; padding: 0; margin: 8px 0; font-size: .9rem; }
 .doc .archivos li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px dashed var(--borde); overflow-wrap: anywhere; }
-.etiqueta { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .78rem; font-weight: 700; border: 1px solid var(--borde); white-space: nowrap; }
-.etiqueta.validado { background: var(--exito); color: #fff; border-color: var(--exito); }
-.etiqueta.subido { background: color-mix(in srgb, var(--marca) 15%, transparent); }
-.etiqueta.rechazado { background: var(--peligro); color: #fff; border-color: var(--peligro); }
+.insignia { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .78rem; font-weight: 700; border: 1px solid var(--borde); white-space: nowrap; }
+.insignia.validado { background: var(--exito); color: #fff; border-color: var(--exito); }
+.insignia.subido { background: color-mix(in srgb, var(--marca) 15%, transparent); }
+.insignia.rechazado { background: var(--peligro); color: #fff; border-color: var(--peligro); }
 .subida input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .enlace-boton { background: none; border: 0; color: var(--peligro); cursor: pointer; font: inherit; text-decoration: underline; padding: 0; }
