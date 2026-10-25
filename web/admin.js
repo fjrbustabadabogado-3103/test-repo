@@ -174,7 +174,8 @@
     }
     const ESTADOS = { recogida_documentos: 'Recogiendo documentos', en_revision: 'Pendiente de tu revisión', documentacion_completa: 'Documentación completa', cerrado: 'Cerrado' };
     const cabecera = el('p', {}, `${ESTADOS[exp.estado] ?? exp.estado} · aportados ${exp.progreso.aportados}/${exp.progreso.obligatorios} · validados ${exp.progreso.validados}/${exp.progreso.obligatorios} · `,
-      el('a', { href: exp.url, target: '_blank', textContent: 'portal del cliente' }));
+      el('a', { href: exp.url, target: '_blank', textContent: 'portal del cliente' }), ' · ',
+      el('a', { href: `/admin/expediente/${exp.id}`, textContent: 'Preparar expediente (acreedores, bienes y borradores) →' }));
     const datos = exp.datos?.domicilio
       ? el('p', { className: 'nota', textContent: `Domicilio: ${exp.datos.domicilio} · Estado civil: ${exp.datos.estado_civil}${exp.datos.conyuge_nombre ? ` (${exp.datos.conyuge_nombre}, ${exp.datos.regimen_economico ?? 'régimen no indicado'})` : ''} · Situación: ${exp.datos.situacion_laboral}${exp.datos.causas ? ` · Causas: ${exp.datos.causas}` : ''}` })
       : el('p', { className: 'aviso', textContent: 'El cliente aún no ha rellenado sus datos complementarios.' });

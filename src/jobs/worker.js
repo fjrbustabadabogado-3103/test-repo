@@ -3,6 +3,7 @@ import { descargarLeadMeta, enviarEventoConversion } from '../modules/captacion/
 import { registrarLead, leadDesdeMeta } from '../modules/captacion/intake.js';
 import { registrarPagoCobrado, registrarPagoFallido } from '../modules/contratacion/encargos.js';
 import { abrirExpediente, recordarDocumentos } from '../modules/documentos/expedientes.js';
+import { ejecutarExtraccion } from '../modules/preparacion/preparacion.js';
 import { sumarDias, sumarMinutos } from '../util.js';
 
 const MAX_INTENTOS = 6;
@@ -67,6 +68,10 @@ function crearManejadores(ctx) {
 
     async recordatorio_documentos(tarea, lead) {
       return recordarDocumentos(ctx, tarea, lead);
+    },
+
+    async extraer_ia(tarea) {
+      return ejecutarExtraccion(ctx, tarea.datos.extraccionId, tarea.intentos);
     },
 
     async purga_rgpd() {

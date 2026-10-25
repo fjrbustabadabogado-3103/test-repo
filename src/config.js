@@ -63,6 +63,13 @@ export function loadConfig(env = process.env, overrides = {}) {
     mensajes: leerJson('mensajes'),
     captacion: leerJson('captacion'),
     documentos: leerJson('documentos'),
+    ia: {
+      // Extracción de datos de documentos con la API de Claude. Requiere credenciales de Anthropic y contrato de encargo (art. 28 RGPD).
+      activada: env.IA_EXTRACCION === 'activada',
+    },
+    preparacion: {
+      costePrevistoProcedimientoEuros: env.COSTE_PREVISTO_PROCEDIMIENTO ? Number(env.COSTE_PREVISTO_PROCEDIMIENTO) : null,
+    },
     archivos: {
       directorio: env.ARCHIVOS_DIR ?? join(ROOT, 'data', 'archivos'),
       // Clave AES-256 en base64 (32 bytes) para cifrar los documentos de los clientes.

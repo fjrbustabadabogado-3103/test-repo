@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Preparación del expediente</title>
+<link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+<header class="cabecera"><a class="marca" href="/admin">← Panel del despacho</a></header>
+<main class="contenedor ancho">
+  <section class="tarjeta">
+    <h1 id="titulo">Preparación del expediente</h1>
+    <p class="subtitulo" id="subtitulo"></p>
+    <div class="kpis" id="kpis"></div>
+    <div id="sin-masa"></div>
+  </section>
+
+  <div class="panel">
+    <section class="tarjeta">
+      <h2>Para presentar</h2>
+      <ul class="historial" id="faltas"></ul>
+      <p class="estado" id="estado-listo" role="status"></p>
+      <button class="boton" id="boton-listo" type="button">Marcar como listo para presentar</button>
+      <h2>Borradores en Word</h2>
+      <p class="nota">Se generan con los datos actuales. Revíselos y complételos antes de presentar.</p>
+      <div class="filtros" id="borradores"></div>
+    </section>
+
+    <section class="tarjeta">
+      <h2>Documentos del cliente</h2>
+      <p class="nota" id="nota-ia"></p>
+      <ul class="historial" id="archivos"></ul>
+    </section>
+  </div>
+
+  <section class="tarjeta">
+    <h2>Memoria y datos de la solicitud</h2>
+    <form id="form-prep">
+      <div class="rejilla">
+        <label class="campo">Órgano competente<input name="tribunal" maxlength="200"></label>
+        <label class="campo">Vía<select name="ruta">
+          <option value="">Elija…</option>
+          <option value="sin_masa">Concurso sin masa y exoneración (arts. 37 bis y 501 TRLC)</option>
+          <option value="plan_pagos">Exoneración con plan de pagos (art. 486.1º TRLC)</option>
+          <option value="liquidacion">Exoneración tras liquidación (art. 486.2º TRLC)</option>
+        </select></label>
+        <label class="campo">Procurador/a<input name="procurador" maxlength="200"></label>
+        <label class="campo">Poder (notarial o apud acta, fecha)<input name="poder" maxlength="300"></label>
+        <label class="campo">Coste previsto del procedimiento (€)<input name="costePrevistoEuros" type="number" min="0" step="1"></label>
+      </div>
+      <p class="nota">Órgano: Sección de lo Mercantil del Tribunal de Instancia de la capital de provincia (art. 87.1 y 87.7 LOPJ). Compruebe las excepciones del art. 87.3 y 87.4 LOPJ.</p>
+      <label class="campo">Historia económica y jurídica<textarea name="historia" rows="5"></textarea></label>
+      <label class="campo">Actividad durante los tres últimos años<textarea name="actividad" rows="3"></textarea></label>
+      <label class="campo">Establecimientos, oficinas y explotaciones<textarea name="establecimientos" rows="2"></textarea></label>
+      <label class="campo">Causas del estado de insolvencia<textarea name="causas" rows="4"></textarea></label>
+      <p class="estado" id="estado-prep" role="status"></p>
+      <button class="boton" type="submit">Guardar</button>
+    </form>
+  </section>
+
+  <section class="tarjeta">
+    <h2>Relación de acreedores <span class="nota">(art. 7.3º TRLC)</span></h2>
+    <div id="acreedores" class="documentos"></div>
+    <button class="boton secundario pequeno" id="nuevo-acreedor" type="button">Añadir acreedor</button>
+  </section>
+
+  <section class="tarjeta">
+    <h2>Inventario de bienes y derechos <span class="nota">(art. 7.2º TRLC)</span></h2>
+    <div id="bienes" class="documentos"></div>
+    <button class="boton secundario pequeno" id="nuevo-bien" type="button">Añadir bien</button>
+  </section>
+</main>
+<script src="/static/admin-expediente.js" defer></script>
+</body>
+</html>

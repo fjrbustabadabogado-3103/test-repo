@@ -21,11 +21,16 @@ import { crearAlmacen } from './modules/documentos/almacen.js';
 import {
   abrirExpediente, expedienteParaCliente, resumenExpediente, guardarDatos, subirArchivo, eliminarArchivo, revisarDocumento, urlPortal,
 } from './modules/documentos/expedientes.js';
+import {
+  resumenPreparacion, expedienteParaPreparar, guardarDatosPreparacion, crearPartida, editarPartida, borrarPartida, solicitarExtraccion, marcarListo,
+} from './modules/preparacion/preparacion.js';
+import { crearClienteIa } from './modules/preparacion/extraccion.js';
+import { generarDocumento } from './modules/preparacion/documentos-word.js';
 import { igualSeguro, aCentimos, normalizarTelefono, fechaLarga, escaparHtml } from './util.js';
 
-const PAGINAS_ESTATICAS = { '/admin': 'admin.html' };
+const PAGINAS_ESTATICAS = { '/admin': 'admin.html', '/admin/expediente/:id': 'admin-expediente.html' };
 const JS = 'text/javascript; charset=utf-8';
-const ESTATICOS = { 'estilos.css': 'text/css; charset=utf-8', 'landing.js': JS, 'admin.js': JS, 'reservar.js': JS, 'encargo.js': JS, 'expediente.js': JS };
+const ESTATICOS = { 'estilos.css': 'text/css; charset=utf-8', 'landing.js': JS, 'admin.js': JS, 'reservar.js': JS, 'encargo.js': JS, 'expediente.js': JS, 'admin-expediente.js': JS };
 const ETAPAS_MANUALES = ['contactado', 'cualificado', 'asistio', 'no_asistio', 'perdido', 'descartado', 'nuevo'];
 // Con hoja de encargo firmada, la etapa la gobiernan la firma, los pagos y el desistimiento.
 const ETAPAS_BLOQUEADAS = ['firmado', 'cliente', 'desistido'];
@@ -33,7 +38,7 @@ const ETAPAS_BLOQUEADAS = ['firmado', 'cliente', 'desistido'];
 /**
  * Construye la aplicación. Todas las dependencias externas se pueden inyectar (tests).
  */
-export function construirApp({ config = loadConfig(), store, reloj = () => new Date(), fetchImpl = fetch, mensajeria, pagos, almacen, log } = {}) {
+export function construirApp({ config = loadConfig(), store, reloj = () => new Date(), fetchImpl = fetch, mensajeria, pagos, almacen, ia, log } = {}) {
   const app = Fastify({ logger: log === undefined ? { level: config.produccion ? 'info' : 'warn' } : log, trustProxy: true, bodyLimit: 256 * 1024 });
   const ctx = {
     config,
@@ -45,6 +50,7 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
   ctx.mensajeria = mensajeria ?? crearMensajeria({ config, store: ctx.store, log: app.log });
   ctx.pagos = pagos ?? crearPagos(config, { fetchImpl });
   ctx.almacen = almacen ?? crearAlmacen(config);
+  ctx.ia = ia ?? (config.ia?.activada ? crearClienteIa() : null);
   ctx.worker = crearWorker(ctx);
   app.decorate('ctx', ctx);
 
@@ -61,7 +67,7 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
   app.setErrorHandler((error, req, reply) => {
     const estado = error.statusCode ?? 500;
     if (estado >= 500) req.log.error(error);
-    reply.code(estado).send({ error: estado >= 500 ? 'Error interno. Inténtelo de nuevo en unos minutos.' : error.message });
+    reply.code(estado).send({ error: estado >= 500 ? 'Error interno. Inténtelo de nuevo en unos minutos.' : error.message, ...(error.faltas ? { faltas: error.faltas } : {}) });
   });
 
   app.addHook('onSend', async (req, reply, cuerpo) => {
@@ -352,6 +358,43 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
       const expediente = abrirExpediente(ctx, encargo);
       ctx.worker.despertar();
       return { ok: true, url: urlPortal(ctx, expediente) };
+    });
+
+    // ---- Módulo 5 · Preparación del expediente ----
+    admin.get('/expedientes/:id/preparacion', async (req) => resumenPreparacion(ctx, expedienteParaPreparar(ctx, req.params.id)));
+
+    admin.put('/expedientes/:id/preparacion', async (req) => guardarDatosPreparacion(ctx, req.params.id, req.body));
+
+    for (const tabla of ['acreedores', 'bienes']) {
+      admin.post(`/expedientes/:id/${tabla}`, async (req) => crearPartida(ctx, req.params.id, tabla, req.body));
+      admin.patch(`/${tabla}/:id`, async (req) => editarPartida(ctx, tabla, req.params.id, req.body));
+      admin.delete(`/${tabla}/:id`, async (req) => {
+        borrarPartida(ctx, tabla, req.params.id);
+        return { ok: true };
+      });
+    }
+
+    admin.post('/expedientes/:id/extracciones', async (req) => {
+      const extraccion = solicitarExtraccion(ctx, req.params.id, req.body?.archivoId);
+      ctx.worker.despertar();
+      return extraccion;
+    });
+
+    admin.post('/expedientes/:id/listo', async (req) => {
+      const datos = marcarListo(ctx, req.params.id, req.body?.listo === true);
+      ctx.worker.despertar();
+      return datos;
+    });
+
+    admin.get('/expedientes/:id/documentos/:tipo', async (req, reply) => {
+      const expediente = expedienteParaPreparar(ctx, req.params.id);
+      const { contenido, nombre } = await generarDocumento(ctx, expediente, req.params.tipo);
+      ctx.store.registrarEvento(expediente.lead_id, 'borrador_generado', { tipo: req.params.tipo });
+      return reply
+        .type('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        .header('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(nombre)}`)
+        .header('Cache-Control', 'no-store')
+        .send(contenido);
     });
 
     admin.post('/documentos/:id/revision', async (req) => {

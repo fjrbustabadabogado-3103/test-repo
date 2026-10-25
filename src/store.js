@@ -168,6 +168,72 @@ CREATE TABLE IF NOT EXISTS archivos (
   eliminado TEXT
 );
 CREATE INDEX IF NOT EXISTS archivos_documento ON archivos(documento_id);
+
+CREATE TABLE IF NOT EXISTS acreedores (
+  id TEXT PRIMARY KEY,
+  expediente_id TEXT NOT NULL REFERENCES expedientes(id),
+  nombre TEXT,
+  nif TEXT,
+  domicilio TEXT,
+  email TEXT,
+  tipo TEXT NOT NULL,
+  concepto TEXT,
+  importe_cent INTEGER,
+  vencimiento TEXT,
+  garantia TEXT NOT NULL DEFAULT 'ninguna',
+  garantia_detalle TEXT,
+  procedimiento_judicial TEXT,
+  clase TEXT,
+  notas TEXT,
+  cita TEXT,
+  archivo_id TEXT,
+  origen TEXT NOT NULL,
+  revisado INTEGER NOT NULL DEFAULT 0,
+  creado TEXT NOT NULL,
+  actualizado TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS acreedores_expediente ON acreedores(expediente_id);
+
+CREATE TABLE IF NOT EXISTS bienes (
+  id TEXT PRIMARY KEY,
+  expediente_id TEXT NOT NULL REFERENCES expedientes(id),
+  tipo TEXT NOT NULL,
+  descripcion TEXT,
+  ubicacion TEXT,
+  datos_registrales TEXT,
+  valor_adquisicion_cent INTEGER,
+  valor_mercado_cent INTEGER,
+  cargas TEXT,
+  cargas_cent INTEGER,
+  embargable INTEGER,
+  notas TEXT,
+  cita TEXT,
+  archivo_id TEXT,
+  origen TEXT NOT NULL,
+  revisado INTEGER NOT NULL DEFAULT 0,
+  creado TEXT NOT NULL,
+  actualizado TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS bienes_expediente ON bienes(expediente_id);
+
+CREATE TABLE IF NOT EXISTS preparaciones (
+  expediente_id TEXT PRIMARY KEY REFERENCES expedientes(id),
+  datos TEXT NOT NULL DEFAULT '{}',
+  listo TEXT,
+  actualizado TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS extracciones (
+  id TEXT PRIMARY KEY,
+  archivo_id TEXT NOT NULL REFERENCES archivos(id),
+  expediente_id TEXT NOT NULL REFERENCES expedientes(id),
+  estado TEXT NOT NULL,
+  creado TEXT NOT NULL,
+  terminado TEXT,
+  error TEXT,
+  resumen TEXT
+);
+CREATE INDEX IF NOT EXISTS extracciones_expediente ON extracciones(expediente_id);
 `;
 
 export const ETAPAS = [
@@ -578,6 +644,79 @@ export class Store {
 
   marcarArchivoEliminado(id) {
     this.db.prepare('UPDATE archivos SET eliminado = ? WHERE id = ?').run(this.ahora(), id);
+  }
+
+  // ---------- Preparación del expediente (módulo 5) ----------
+
+  /** Acreedores y bienes comparten forma: filas editables con origen, revisión y cita del documento. */
+  crearPartida(tabla, expedienteId, datos) {
+    if (!['acreedores', 'bienes'].includes(tabla)) throw new Error('Tabla no válida');
+    const ahora = this.ahora();
+    const fila = { id: nuevoId(), expediente_id: expedienteId, creado: ahora, actualizado: ahora, revisado: 0, ...datos };
+    const columnas = Object.keys(fila);
+    this.db.prepare(`INSERT INTO ${tabla} (${columnas.join(', ')}) VALUES (${columnas.map(() => '?').join(', ')})`)
+      .run(...columnas.map((c) => (typeof fila[c] === 'boolean' ? (fila[c] ? 1 : 0) : fila[c] ?? null)));
+    return this.partida(tabla, fila.id);
+  }
+
+  partida(tabla, id) {
+    if (!['acreedores', 'bienes'].includes(tabla)) throw new Error('Tabla no válida');
+    const fila = this.db.prepare(`SELECT * FROM ${tabla} WHERE id = ?`).get(id);
+    if (!fila) return null;
+    return { ...fila, revisado: Boolean(fila.revisado), ...(tabla === 'bienes' ? { embargable: fila.embargable == null ? null : Boolean(fila.embargable) } : {}) };
+  }
+
+  partidas(tabla, expedienteId) {
+    if (!['acreedores', 'bienes'].includes(tabla)) throw new Error('Tabla no válida');
+    return this.db.prepare(`SELECT id FROM ${tabla} WHERE expediente_id = ? ORDER BY creado, rowid`).all(expedienteId).map((f) => this.partida(tabla, f.id));
+  }
+
+  actualizarPartida(tabla, id, cambios) {
+    if (!['acreedores', 'bienes'].includes(tabla)) throw new Error('Tabla no válida');
+    const columnas = Object.keys(cambios);
+    if (columnas.length) {
+      this.db.prepare(`UPDATE ${tabla} SET ${columnas.map((c) => `${c} = ?`).join(', ')}, actualizado = ? WHERE id = ?`)
+        .run(...columnas.map((c) => (typeof cambios[c] === 'boolean' ? (cambios[c] ? 1 : 0) : cambios[c] ?? null)), this.ahora(), id);
+    }
+    return this.partida(tabla, id);
+  }
+
+  borrarPartida(tabla, id) {
+    if (!['acreedores', 'bienes'].includes(tabla)) throw new Error('Tabla no válida');
+    this.db.prepare(`DELETE FROM ${tabla} WHERE id = ?`).run(id);
+  }
+
+  preparacion(expedienteId) {
+    const fila = this.db.prepare('SELECT * FROM preparaciones WHERE expediente_id = ?').get(expedienteId);
+    return fila ? { ...fila, datos: JSON.parse(fila.datos) } : { expediente_id: expedienteId, datos: {}, listo: null };
+  }
+
+  guardarPreparacion(expedienteId, { datos, listo }) {
+    const actual = this.preparacion(expedienteId);
+    this.db.prepare(`INSERT INTO preparaciones (expediente_id, datos, listo, actualizado) VALUES (?, ?, ?, ?)
+      ON CONFLICT(expediente_id) DO UPDATE SET datos = excluded.datos, listo = excluded.listo, actualizado = excluded.actualizado`)
+      .run(expedienteId, JSON.stringify(datos ?? actual.datos), listo === undefined ? actual.listo : listo, this.ahora());
+    return this.preparacion(expedienteId);
+  }
+
+  crearExtraccion(archivoId, expedienteId) {
+    const id = nuevoId();
+    this.db.prepare("INSERT INTO extracciones (id, archivo_id, expediente_id, estado, creado) VALUES (?, ?, ?, 'pendiente', ?)").run(id, archivoId, expedienteId, this.ahora());
+    return this.extraccion(id);
+  }
+
+  extraccion(id) {
+    return filaJson(this.db.prepare('SELECT * FROM extracciones WHERE id = ?').get(id), ['resumen']);
+  }
+
+  extraccionesDeExpediente(expedienteId) {
+    return this.db.prepare('SELECT * FROM extracciones WHERE expediente_id = ? ORDER BY creado').all(expedienteId).map((f) => filaJson(f, ['resumen']));
+  }
+
+  terminarExtraccion(id, { estado, error = null, resumen = null }) {
+    this.db.prepare('UPDATE extracciones SET estado = ?, error = ?, resumen = ?, terminado = ? WHERE id = ?')
+      .run(estado, error, resumen == null ? null : JSON.stringify(resumen), this.ahora(), id);
+    return this.extraccion(id);
   }
 
   cerrar() {

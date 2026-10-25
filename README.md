@@ -1,11 +1,12 @@
 # Bustabad Abogados · Captación y contratación automatizadas (Ley de Segunda Oportunidad)
 
-Aplicación que automatiza los cuatro primeros módulos del negocio:
+Aplicación que automatiza los cinco primeros módulos del negocio:
 
 1. **Captación**: formulario web y formularios instantáneos de Meta (Facebook/Instagram), con atribución por campaña y envío de las etapas del CRM a la API de Conversiones de Meta.
 2. **Cualificación y agenda**: semáforo automático basado en el TRLC, respuesta por WhatsApp en segundos, reserva de la consulta online, recordatorios, seguimientos y gestión de ausencias.
 3. **Contratación y cobro**: hoja de encargo generada desde el panel, firma electrónica con código de un solo uso, pago de la entrada (tarjeta o SEPA) y cobro automático de las cuotas.
 4. **Recogida de documentos**: portal del cliente con la lista de documentos adaptada a su caso, subida desde el móvil con almacenamiento cifrado, revisión por el abogado y recordatorios hasta completar el expediente.
+5. **Preparación del expediente**: relación de acreedores e inventario (con extracción opcional por IA que el abogado revisa), indicadores para decidir la vía, comprobaciones antes de presentar y borradores en Word de la memoria, el inventario, la relación de acreedores y la solicitud de concurso.
 
 Sin credenciales funciona **entero en local**: los WhatsApp y correos se guardan en la bandeja de salida (tabla `salida`) y los pagos son simulados.
 
@@ -26,7 +27,7 @@ Requisitos: Node.js 22.13 o superior (usa el SQLite integrado de Node; no hay de
 npm install
 cp .env.example .env      # rellenar según la sección "Integraciones"
 npm start                 # http://localhost:3000
-npm test                  # 36 pruebas: reglas, agenda, pagos, firmas, documentos y flujo completo
+npm test                  # 42 pruebas: reglas, agenda, pagos, firmas, documentos, preparación y flujo completo
 ```
 
 Las variables de entorno se leen del entorno del proceso. Para usar el fichero `.env` en local: `node --env-file=.env src/index.js`.
@@ -38,6 +39,7 @@ Las variables de entorno se leen del entorno del proceso. Para usar el fichero `
 | `/encargo/:token` | Hoja de encargo: firma, pago, cuotas y desistimiento |
 | `/expediente/:token` | Portal del cliente para sus datos y documentos |
 | `/admin` | Panel del despacho: métricas, leads, ficha y envío de propuestas (en desarrollo el token es `dev-admin`) |
+| `/admin/expediente/:id` | Preparación del expediente: acreedores, bienes, memoria, comprobaciones y borradores en Word |
 | `/privacidad` | Política de privacidad generada desde `config/despacho.json` |
 
 ## Cómo funciona el flujo
@@ -117,6 +119,26 @@ Si el lead responde por WhatsApp, se detienen los automatismos comerciales y se 
 - **Revisión:** el abogado valida cada documento o pide corregirlo con un motivo, que el cliente recibe por WhatsApp y ve en el portal. El poder del procurador puede validarse sin archivo si se otorgó apud acta.
 - **Fin:** cuando todo está validado, el expediente pasa a *documentación completa*, se paran los recordatorios y se avisa al equipo para preparar la solicitud.
 
+## Módulo 5 · Preparación del expediente
+
+Desde la ficha del lead, «Preparar expediente» abre la pantalla de trabajo del abogado:
+
+- **Relación de acreedores (art. 7.3º TRLC):** cada acreedor con identidad, NIF, domicilio, correo electrónico, cuantía, vencimiento, garantías y reclamación judicial. La clase del crédito (privilegio especial del art. 270, privilegio general del art. 280, ordinario o subordinado) la elige el abogado.
+- **Inventario (art. 7.2º TRLC):** naturaleza, lugar, datos registrales, valor de adquisición, valor de mercado y cargas. Si un bien es embargable lo decide el abogado.
+- **Extracción con IA (opcional):** con `IA_EXTRACCION=activada`, el botón «Extraer datos» envía el documento (PDF, JPG, PNG o WEBP) a Claude Opus 5.5.
+  - Devuelve acreedores y bienes en un formato validado, cada uno con la cita literal del documento.
+  - Las propuestas entran siempre como **«sin revisar»** y no se puede presentar hasta que el abogado las confirma.
+  - Si el modelo rechaza un documento, la API lo reintenta automáticamente con otro modelo (parámetro `fallbacks: "default"`).
+  - Los fallos de red se reintentan unas cuantas veces y, si persisten, quedan registrados para introducir los datos a mano.
+- **Indicadores para decidir la vía:**
+  - pasivo, crédito público no exonerable (art. 489.1.5º, límite aplicado por separado a Hacienda y a la Seguridad Social), alimentos, deuda con garantía real, activo y bienes libres y embargables;
+  - indicios de concurso sin masa según las letras a), c) y d) del art. 37 bis. Estos indicadores no deciden nada: los valora el abogado.
+- **Comprobaciones antes de presentar:** cada carencia se muestra con la norma que la exige (arts. 6.2, 7, 37 bis, 44, 45, 486, 501 y 510 TRLC; art. 87 LOPJ). Solo con todo completo se puede marcar «listo para presentar», y a partir de ahí el expediente queda bloqueado hasta que se reabra.
+- **Borradores en Word:** memoria, inventario, relación de acreedores y solicitud de concurso dirigida a la Sección de lo Mercantil del Tribunal de Instancia de la capital de provincia (art. 87.1 y 87.7 LOPJ, redacción de la LO 1/2025). Son borradores para revisar.
+  - No he encontrado en el BOE el modelo oficial de solicitud que menciona el art. 6.2 TRLC; el borrador avisa de que hay que comprobar si debe usarse.
+
+**Protección de datos:** la extracción con IA envía documentos del cliente a Anthropic. Antes de activarla, firma el contrato de encargado del tratamiento (art. 28 RGPD) y revisa sus condiciones de conservación de datos.
+
 **Importante:** guarda `ARCHIVOS_CLAVE` en un lugar seguro y haz copia de seguridad de `ARCHIVOS_DIR` junto con la base de datos. Sin la clave, los documentos no se pueden recuperar.
 
 ## Base legal aplicada (comprobada en el BOE consolidado)
@@ -130,6 +152,8 @@ Si el lead responde por WhatsApp, se detienen los automatismos comerciales y se 
 | TRLC art. 8 | A los autónomos se les pide la contabilidad si están obligados a llevarla |
 | TRLC art. 45 | Certificado de empadronamiento para acreditar el domicilio que fija el juzgado competente |
 | TRLC art. 501.3 | Declaraciones de la renta de los tres últimos años |
+| TRLC arts. 1, 2, 3, 44, 270 y 280 | Borrador de solicitud (presupuestos, insolvencia actual, legitimación, competencia) y clases de crédito que elige el abogado |
+| LOPJ art. 87 (LO 1/2025) | La solicitud se dirige a la Sección de lo Mercantil del Tribunal de Instancia de la capital de provincia, con las excepciones de los apartados 2, 3 y 4 |
 | EGAE (RD 135/2021) art. 20 | Textos sin promesas de resultado ni incitación al pleito |
 | EGAE art. 48 | Identificación del profesional, viabilidad, honorarios en hoja de encargo, costas e información del asunto |
 | TRLGDCU art. 98.2 | El botón de firma dice "pedido con obligación de pago" y se confirma expresamente la obligación de pago |
@@ -158,6 +182,7 @@ src/
   modules/cualificacion/  semáforo TRLC, agenda, reservas y secuencias automáticas
   modules/contratacion/   hoja de encargo, firma, pagos, cuotas y desistimiento
   modules/documentos/     expediente, lista de documentos, almacén cifrado y revisión
+  modules/preparacion/    acreedores, bienes, indicadores, extracción con IA y borradores en Word
   messaging/              WhatsApp Cloud API y correo (modo consola sin credenciales)
   jobs/worker.js          tareas programadas con reintentos
   metricas.js             embudo, tasas, velocidad de respuesta y coste por cliente
@@ -168,6 +193,5 @@ test/                     pruebas (node:test)
 
 ## Siguientes módulos
 
-5. Preparación del expediente (memoria, inventario y relación de acreedores del art. 7 TRLC a partir de los documentos).
 6. Seguimiento procesal y plazos (arts. 37 ter y 501 TRLC).
 7. Cierre, reseñas y recomendaciones.
