@@ -297,6 +297,13 @@ test('páginas públicas responden con cabeceras de seguridad', async () => {
     assert.ok(r.headers['content-security-policy'], url);
   }
   assert.equal((await e.app.inject({ url: '/static/../config/despacho.json' })).statusCode, 404);
+  const fuente = await e.app.inject({ url: '/static/fuentes/poppins-700.woff2' });
+  assert.equal(fuente.statusCode, 200);
+  assert.equal(fuente.headers['content-type'], 'font/woff2');
+  assert.equal(fuente.rawPayload.subarray(0, 4).toString('latin1'), 'wOF2');
+  assert.equal((await e.app.inject({ url: '/static/fuentes/OFL-Poppins.txt' })).statusCode, 404);
+  assert.equal((await e.app.inject({ url: '/static/fuentes/sifonn-pro.woff2' })).statusCode, 404, 'opcional: no incluida');
+  assert.equal((await e.app.inject({ url: '/static/marca.svg' })).headers['content-type'], 'image/svg+xml');
   assert.equal((await e.app.inject({ url: '/reservar/no-existe' })).statusCode, 404);
   const landing = await e.app.inject({ url: '/' });
   assert.ok(!landing.body.includes('{{'), 'placeholders rellenados');

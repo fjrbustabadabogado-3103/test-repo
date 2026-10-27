@@ -62,7 +62,9 @@ export function crearMensajeria({ config, store, whatsapp, email, log = console 
       if (!plantilla) throw new Error(`Plantilla desconocida: ${plantillaClave}`);
       if (lead.anonimizado) return { estado: 'omitido_anonimizado' };
       if (lead.baja && plantillaClave !== 'codigo_firma') return { estado: 'omitido_baja' };
-      if (plantilla.comercial && !lead.consentimiento_comunicaciones) return { estado: 'omitido_sin_consentimiento' };
+      // art. 21.2 LSSI: con relación contractual previa se pueden enviar comunicaciones sobre servicios propios similares, con baja sencilla.
+      const exentoPorContrato = plantilla.excepcionClientes === true && ['cliente', 'firmado'].includes(lead.etapa);
+      if (plantilla.comercial && !lead.consentimiento_comunicaciones && !exentoPorContrato) return { estado: 'omitido_sin_consentimiento' };
       const resultado = await entregar({
         leadId: lead.id,
         plantillaClave,

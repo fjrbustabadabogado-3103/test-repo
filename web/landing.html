@@ -6,16 +6,24 @@
 <title>Ley de Segunda Oportunidad · {{despacho}}</title>
 <meta name="description" content="Consulta de diagnóstico gratuita por videollamada para saber si su caso cumple los requisitos de la Ley de Segunda Oportunidad. Atendemos en toda España.">
 <link rel="stylesheet" href="/static/estilos.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 </head>
 <body>
-<header class="cabecera"><a class="marca" href="/">{{despacho}}</a></header>
-<main class="contenedor">
-  <section class="heroe">
+<header class="cabecera"><a class="marca" href="/" aria-label="{{despacho}}"><img src="/static/marca.svg" alt="" width="42" height="42"><span class="marca-texto"><span class="marca-nombre">Bustabad</span><span class="marca-sub">Abogados</span></span></a><a class="cabecera-titulo acento" href="#cuestionario">Consulta gratuita</a></header>
+<section class="heroe">
+  <div class="heroe-contenido">
+    <p class="antetitulo">Ley de Segunda Oportunidad · Toda España</p>
     <h1>¿Las deudas no le dejan vivir con tranquilidad?</h1>
     <p>La Ley de Segunda Oportunidad permite a las personas de buena fe pedir al juzgado la cancelación de sus deudas. En una consulta gratuita por videollamada le explicamos, con total confidencialidad, si su caso cumple los requisitos y cuánto costaría.</p>
-    <p><a class="boton" href="#cuestionario">Ver si mi caso encaja</a></p>
-  </section>
-
+    <p><a class="boton grande" href="#cuestionario">Ver si mi caso encaja</a></p>
+    <ul class="garantias">
+      <li>Consulta de diagnóstico gratuita</li>
+      <li>Por videollamada, desde cualquier lugar</li>
+      <li>Precio cerrado y pago en cuotas</li>
+    </ul>
+  </div>
+</section>
+<main class="contenedor">
   <ol class="pasos">
     <li><strong>Responda 10 preguntas</strong><br>Datos aproximados, sin documentos. Le lleva dos minutos.</li>
     <li><strong>Elija día y hora</strong><br>Consulta de diagnóstico gratuita por videollamada, desde cualquier lugar de España.</li>
@@ -24,14 +32,14 @@
 
   <section class="tarjeta">
     <h2>Lo que debe saber antes</h2>
-    <ul>
+    <ul class="lista-claves">
       <li>La decisión final la toma el juzgado: ningún abogado puede garantizarle el resultado.</li>
       <li>Hay deudas que la ley no permite cancelar, como las pensiones de alimentos, y otras que solo se cancelan en parte, como las de Hacienda y la Seguridad Social.</li>
       <li>Es necesario actuar de buena fe y no tener ciertas condenas o sanciones graves recientes.</li>
     </ul>
   </section>
 
-  <section class="tarjeta" id="cuestionario">
+  <section class="tarjeta destacada" id="cuestionario">
     <h2>Cuestionario de viabilidad</h2>
     <form id="form-lead" novalidate>
       <div class="rejilla">
@@ -120,7 +128,7 @@
 
   <p class="nota">{{despacho}} · {{titular}}, colegiado/a n.º {{numeroColegiado}} del {{colegio}}.</p>
 </main>
-<footer class="pie"><a href="/privacidad">Privacidad</a></footer>
+<footer class="pie"><span class="marca" aria-hidden="true"><img src="/static/marca.svg" alt="" width="42" height="42"><span class="marca-texto"><span class="marca-nombre">Bustabad</span><span class="marca-sub">Abogados</span></span></span><br><a href="/privacidad">Privacidad</a></footer>
 <script src="/static/landing.js" defer></script>
 </body>
 </html>

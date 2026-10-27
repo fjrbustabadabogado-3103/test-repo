@@ -2,6 +2,12 @@ import { condicionSeCumple, cambiarEtapa } from '../etapas.js';
 import { descargarLeadMeta, enviarEventoConversion } from '../modules/captacion/meta.js';
 import { registrarLead, leadDesdeMeta } from '../modules/captacion/intake.js';
 import { registrarPagoCobrado, registrarPagoFallido } from '../modules/contratacion/encargos.js';
+import { abrirExpediente, recordarDocumentos } from '../modules/documentos/expedientes.js';
+import { ejecutarExtraccion } from '../modules/preparacion/preparacion.js';
+import { revisarPlazos, hoyEnZona } from '../modules/seguimiento/procedimientos.js';
+import { localAUtc } from '../modules/cualificacion/agenda.js';
+import { sumarDiasIso } from '../modules/seguimiento/calendario.js';
+import { enviarMensajeCierre, avisarFinConservacion } from '../modules/cierre/cierre.js';
 import { sumarDias, sumarMinutos } from '../util.js';
 
 const MAX_INTENTOS = 6;
@@ -55,6 +61,35 @@ function crearManejadores(ctx) {
         await registrarPagoFallido(ctx, pago.id, error.message);
         return 'fallido';
       }
+    },
+
+    async abrir_expediente(tarea) {
+      const encargo = ctx.store.encargo(tarea.datos.encargoId);
+      if (!encargo || encargo.estado !== 'activo') return 'omitida';
+      abrirExpediente(ctx, encargo);
+      return 'hecho';
+    },
+
+    async recordatorio_documentos(tarea, lead) {
+      return recordarDocumentos(ctx, tarea, lead);
+    },
+
+    async extraer_ia(tarea) {
+      return ejecutarExtraccion(ctx, tarea.datos.extraccionId, tarea.intentos);
+    },
+
+    async revisar_plazos() {
+      const alertas = revisarPlazos(ctx);
+      ctx.store.programar('revisar_plazos', localAUtc(sumarDiasIso(hoyEnZona(ctx), 1), '08:00', ctx.config.agenda.zona));
+      return `alertas:${alertas}`;
+    },
+
+    async cierre_mensaje(tarea, lead) {
+      return enviarMensajeCierre(ctx, tarea, lead);
+    },
+
+    async fin_conservacion(tarea) {
+      return avisarFinConservacion(ctx, tarea);
     },
 
     async purga_rgpd() {
@@ -114,6 +149,7 @@ export function crearWorker(ctx) {
     },
     iniciar(intervaloMs) {
       if (!ctx.store.hayTareaPendiente('purga_rgpd')) ctx.store.programar('purga_rgpd', ctx.reloj());
+      if (!ctx.store.hayTareaPendiente('revisar_plazos')) ctx.store.programar('revisar_plazos', ctx.reloj());
       temporizador = setInterval(() => this.procesar().catch((e) => ctx.log.error?.(e)), intervaloMs);
       temporizador.unref?.();
     },

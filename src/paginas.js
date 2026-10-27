@@ -9,11 +9,12 @@ export function layout(config, titulo, cuerpo, { scripts = [] } = {}) {
 <meta name="robots" content="noindex">
 <title>${e(titulo)} · ${e(config.despacho.nombreComercial)}</title>
 <link rel="stylesheet" href="/static/estilos.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 </head>
 <body>
-<header class="cabecera"><a class="marca" href="/">${e(config.despacho.nombreComercial)}</a></header>
+<header class="cabecera"><a class="marca" href="/" aria-label="${e(config.despacho.nombreComercial)}"><img src="/static/marca.svg" alt="" width="42" height="42"><span class="marca-texto"><span class="marca-nombre">Bustabad</span><span class="marca-sub">Abogados</span></span></a></header>
 <main class="contenedor">${cuerpo}</main>
-<footer class="pie"><a href="/privacidad">Privacidad</a> · ${e(config.despacho.titular.colegio)}</footer>
+<footer class="pie"><span class="marca" aria-hidden="true"><img src="/static/marca.svg" alt="" width="42" height="42"><span class="marca-texto"><span class="marca-nombre">Bustabad</span><span class="marca-sub">Abogados</span></span></span><br><a href="/privacidad">Privacidad</a> · ${e(config.despacho.titular.colegio)}</footer>
 ${scripts.map((s) => `<script src="/static/${e(s)}" defer></script>`).join('')}
 </body>
 </html>`;
@@ -100,4 +101,97 @@ ${puedeDesistir ? `<section class="tarjeta">
 <label class="casilla"><input type="checkbox" id="confirmo-desistir"> Confirmo que deseo desistir de este contrato.</label>
 <button class="boton peligro" id="desistir">Desistir del contrato</button>
 </section>` : ''}${datos}`, { scripts: ['encargo.js'] });
+}
+
+/** Portal del cliente para aportar la documentación del expediente (módulo 4). */
+export function paginaExpediente(ctx, expediente) {
+  const { config } = ctx;
+  const lead = ctx.store.lead(expediente.lead_id);
+  const datos = `<script type="application/json" id="datos-expediente">${JSON.stringify({ token: expediente.token }).replace(/</g, '\\u003c')}</script>`;
+  return layout(config, 'Documentación de su expediente', `
+<section class="tarjeta">
+<h1>Documentación de su expediente</h1>
+<p class="subtitulo">Hola ${e((lead.nombre ?? '').split(' ')[0])}. Con estos documentos preparamos su solicitud. Puede subir fotos hechas con el móvil o archivos PDF, en varias veces: lo que suba queda guardado y cifrado.</p>
+<div class="progreso" aria-hidden="true"><div class="progreso-barra" id="barra"></div></div>
+<p class="estado" id="estado-general" role="status">Cargando…</p>
+</section>
+<section class="tarjeta oculto" id="bloque-seguimiento">
+<h2>Estado de su procedimiento</h2>
+<p class="subtitulo" id="estado-procedimiento"></p>
+<ul class="linea-tiempo" id="actuaciones-cliente"></ul>
+</section>
+<section class="tarjeta" id="bloque-datos">
+<h2>1. Sus datos</h2>
+<p class="nota">Los necesitamos para la memoria que acompaña a la solicitud y para saber qué documentos le corresponden.</p>
+<form id="form-datos" novalidate>
+<label class="campo">Domicilio completo (calle, número, piso, código postal y municipio)<input name="domicilio" required maxlength="300" autocomplete="street-address"></label>
+<div class="rejilla">
+<label class="campo">Estado civil<select name="estado_civil" required>
+<option value="">Elija…</option><option value="soltero">Soltero/a</option><option value="casado">Casado/a</option><option value="pareja_inscrita">Pareja de hecho inscrita</option><option value="separado_divorciado">Separado/a o divorciado/a</option><option value="viudo">Viudo/a</option>
+</select></label>
+<label class="campo">Situación laboral<select name="situacion_laboral" required>
+<option value="">Elija…</option><option value="asalariado">Trabajo por cuenta ajena</option><option value="autonomo">Autónomo/a</option><option value="desempleado">En desempleo</option><option value="pensionista">Pensionista</option><option value="otro">Otra</option>
+</select></label>
+<label class="campo">Personas a su cargo<input name="personas_a_cargo" type="number" min="0" max="20" value="0"></label>
+</div>
+<div class="rejilla" id="bloque-conyuge">
+<label class="campo">Nombre del cónyuge o pareja<input name="conyuge_nombre" maxlength="120"></label>
+<label class="campo">Fecha de matrimonio o inscripción<input name="fecha_matrimonio" type="date"></label>
+<label class="campo">Régimen económico<select name="regimen_economico">
+<option value="">Elija…</option><option value="gananciales">Gananciales</option><option value="separacion">Separación de bienes</option><option value="participacion">Participación</option><option value="otro">Otro</option><option value="no_sabe">No lo sé</option>
+</select></label>
+</div>
+<fieldset><legend>¿Tiene algún inmueble a su nombre (vivienda, local, terreno), aunque sea en parte?</legend><div class="opciones"><label><input type="radio" name="tiene_inmuebles" value="si"> Sí</label><label><input type="radio" name="tiene_inmuebles" value="no" checked> No</label></div></fieldset>
+<fieldset><legend>¿Tiene vehículos a su nombre?</legend><div class="opciones"><label><input type="radio" name="tiene_vehiculos" value="si"> Sí</label><label><input type="radio" name="tiene_vehiculos" value="no" checked> No</label></div></fieldset>
+<fieldset><legend>¿Algún acreedor le ha demandado o le está embargando?</legend><div class="opciones"><label><input type="radio" name="procedimientos_judiciales" value="si"> Sí</label><label><input type="radio" name="procedimientos_judiciales" value="no" checked> No</label></div></fieldset>
+<label class="campo">¿Cómo llegó a esta situación? (opcional: despido, enfermedad, separación, cierre del negocio…)<textarea name="causas" rows="3" maxlength="2000"></textarea></label>
+<p class="estado" id="estado-datos" role="status"></p>
+<button class="boton" type="submit">Guardar mis datos</button>
+</form>
+</section>
+<section class="tarjeta">
+<h2>2. Sus documentos</h2>
+<div id="documentos" class="documentos"></div>
+</section>${datos}`, { scripts: ['expediente.js'] });
+}
+
+/** Valoración del cliente al terminar: puntuación, comentario, testimonio con autorización separada, reseña y recomendación. */
+export function paginaValoracion(ctx, cierre) {
+  const datos = `<script type="application/json" id="datos-valoracion">${JSON.stringify({ token: cierre.token }).replace(/</g, '\\u003c')}</script>`;
+  return layout(ctx.config, 'Su opinión', `
+<section class="tarjeta" id="bloque-formulario">
+<h1>¿Cómo le hemos atendido?</h1>
+<p class="subtitulo">Su opinión nos ayuda a mejorar. Todas las respuestas son voluntarias.</p>
+<form id="form-valoracion" novalidate>
+<fieldset><legend>Del 0 al 10, ¿con qué probabilidad nos recomendaría a un familiar o amigo?</legend>
+<div class="opciones" id="puntuaciones"></div></fieldset>
+<label class="campo">¿Qué podríamos mejorar o qué le ha gustado más? (opcional)<textarea name="comentario" rows="3" maxlength="1000"></textarea></label>
+<div class="aviso">
+<h2>Testimonio (opcional)</h2>
+<p>Si quiere, puede escribir unas líneas sobre su experiencia para que otras personas en su situación las lean. Solo lo publicaremos si lo autoriza expresamente.</p>
+<label class="campo">Su testimonio<textarea name="testimonio" rows="4" maxlength="1500"></textarea></label>
+<label class="campo">Firmar como<select name="firma"><option value="iniciales">Mis iniciales</option><option value="nombre">Mi nombre completo</option><option value="anonimo">Sin nombre («Cliente del despacho»)</option></select></label>
+<label class="casilla"><input type="checkbox" name="autoriza"> <span id="texto-consentimiento"></span></label>
+</div>
+<p class="estado" id="estado-valoracion" role="status"></p>
+<button class="boton" type="submit">Enviar</button>
+</form>
+</section>
+<section class="tarjeta oculto" id="bloque-gracias">
+<h1>Gracias</h1>
+<div id="bloque-resena" class="oculto">
+<p>Si quiere contar su experiencia públicamente, puede dejar su opinión en Google. Nos ayuda a que otras personas nos encuentren.</p>
+<p><a class="boton" id="enlace-resena" href="#" rel="noopener">Dejar mi opinión en Google</a></p>
+</div>
+<h2>¿Conoce a alguien en su misma situación?</h2>
+<p>Puede compartir este enlace. No le diremos a nadie que usted nos lo ha recomendado.</p>
+<p><code id="enlace-referido"></code></p>
+<p><a class="boton secundario" id="compartir-whatsapp" href="#" rel="noopener" target="_blank">Compartir por WhatsApp</a></p>
+<div id="bloque-testimonio" class="oculto">
+<h2>Su testimonio</h2>
+<p id="texto-testimonio"></p>
+<p class="nota" id="estado-testimonio"></p>
+<button class="boton peligro pequeno oculto" id="revocar" type="button">Retirar mi autorización</button>
+</div>
+</section>${datos}`, { scripts: ['valoracion.js'] });
 }

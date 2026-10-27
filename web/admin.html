@@ -6,12 +6,14 @@
 <meta name="robots" content="noindex">
 <title>Panel del despacho</title>
 <link rel="stylesheet" href="/static/estilos.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 </head>
 <body>
-<header class="cabecera"><span class="marca">Panel del despacho · Segunda Oportunidad</span></header>
+<header class="cabecera"><a class="marca" href="/admin" aria-label="Bustabad Abogados, panel del despacho"><img src="/static/marca.svg" alt="" width="42" height="42"><span class="marca-texto"><span class="marca-nombre">Bustabad</span><span class="marca-sub">Abogados</span></span></a><span class="cabecera-titulo">Panel del despacho</span></header>
 <main class="contenedor ancho">
-  <section class="tarjeta" id="acceso">
-    <h1>Acceso</h1>
+  <section class="tarjeta acceso" id="acceso">
+    <img src="/static/marca.svg" alt="">
+    <h1>Acceso al panel</h1>
     <form id="form-acceso">
       <label class="campo">Token de administración<input name="token" type="password" autocomplete="current-password" required></label>
       <button class="boton" type="submit">Entrar</button>
@@ -24,6 +26,12 @@
         <select id="periodo"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 90 días</option></select>
       </div>
       <div class="kpis" id="kpis"></div>
+    </section>
+
+    <section class="tarjeta">
+      <h2>Plazos procesales</h2>
+      <div class="tabla-scroll"><table><thead><tr><th>Vence</th><th>Quedan</th><th>Plazo</th><th>Cliente</th><th>Órgano</th></tr></thead><tbody id="plazos"></tbody></table></div>
+      <p class="nota">Suscríbase a estos plazos desde Google Calendar u Outlook («Añadir calendario desde URL»): <code id="url-calendario"></code></p>
     </section>
 
     <div class="panel">
@@ -40,6 +48,14 @@
 
       <section class="tarjeta" id="ficha"><p class="nota">Seleccione un lead para ver su ficha.</p></section>
     </div>
+
+    <section class="tarjeta">
+      <h2>Satisfacción y recomendaciones</h2>
+      <div class="kpis" id="kpis-cierre"></div>
+      <h3>Testimonios autorizados</h3>
+      <p class="nota">Solo pueden publicarse los que figuran aquí, con la firma que eligió cada cliente (art. 20.2.e EGAE). Si un cliente retira la autorización, desaparece de la lista y se avisa al equipo.</p>
+      <ul class="historial" id="testimonios"></ul>
+    </section>
 
     <section class="tarjeta">
       <h2>Gasto en publicidad</h2>

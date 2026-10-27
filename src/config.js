@@ -18,10 +18,15 @@ function lista(valor) {
  */
 export function loadConfig(env = process.env, overrides = {}) {
   const produccion = env.NODE_ENV === 'production';
+  const port = Number(env.PORT ?? 3000);
+  // En GitHub Codespaces, los enlaces deben usar la dirección pública del puerto reenviado.
+  const urlPorDefecto = env.CODESPACE_NAME
+    ? `https://${env.CODESPACE_NAME}-${port}.${env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN ?? 'app.github.dev'}`
+    : `http://localhost:${port}`;
   const config = {
     produccion,
-    port: Number(env.PORT ?? 3000),
-    baseUrl: (env.BASE_URL ?? 'http://localhost:3000').replace(/\/$/, ''),
+    port,
+    baseUrl: (env.BASE_URL ?? urlPorDefecto).replace(/\/$/, ''),
     dbPath: env.DB_PATH ?? join(ROOT, 'data', 'crm.sqlite'),
     adminToken: env.ADMIN_TOKEN || (produccion ? '' : 'dev-admin'),
     appSecret: env.APP_SECRET || (produccion ? '' : 'dev-secret'),
@@ -57,6 +62,22 @@ export function loadConfig(env = process.env, overrides = {}) {
     agenda: leerJson('agenda'),
     mensajes: leerJson('mensajes'),
     captacion: leerJson('captacion'),
+    documentos: leerJson('documentos'),
+    calendario: leerJson('calendario'),
+    procesal: leerJson('procesal'),
+    cierre: leerJson('cierre'),
+    ia: {
+      // Extracción de datos de documentos con la API de Claude. Requiere credenciales de Anthropic y contrato de encargo (art. 28 RGPD).
+      activada: env.IA_EXTRACCION === 'activada',
+    },
+    preparacion: {
+      costePrevistoProcedimientoEuros: env.COSTE_PREVISTO_PROCEDIMIENTO ? Number(env.COSTE_PREVISTO_PROCEDIMIENTO) : null,
+    },
+    archivos: {
+      directorio: env.ARCHIVOS_DIR ?? join(ROOT, 'data', 'archivos'),
+      // Clave AES-256 en base64 (32 bytes) para cifrar los documentos de los clientes.
+      clave: env.ARCHIVOS_CLAVE ?? '',
+    },
     ...overrides,
   };
   return config;
@@ -72,5 +93,6 @@ export function problemasProduccion(config) {
   if (config.pagos.proveedor === 'simulado') problemas.push('PAGOS_PROVEEDOR=simulado no se permite en producción.');
   if (config.meta.verifyToken && !config.meta.appSecret) problemas.push('META_APP_SECRET es obligatorio si se activa el webhook de Meta.');
   if (config.pagos.proveedor === 'stripe' && !config.pagos.stripeWebhookSecret) problemas.push('STRIPE_WEBHOOK_SECRET es obligatorio con Stripe.');
+  if (Buffer.from(config.archivos.clave, 'base64').length !== 32) problemas.push('ARCHIVOS_CLAVE debe ser una clave de 32 bytes en base64 (openssl rand -base64 32).');
   return problemas;
 }

@@ -1,0 +1,142 @@
+{
+  "_comentario": "Catálogo de actuaciones del procedimiento de exoneración. Cada actuación puede cambiar el estado, generar plazos, cancelar o dar por cumplidos otros y avisar al cliente. Revise las bases legales antes de añadir tipos nuevos.",
+  "alertasDiasHabiles": [
+    5,
+    2,
+    1,
+    0
+  ],
+  "estados": {
+    "preparado": "Listo para presentar",
+    "presentado": "Solicitud presentada",
+    "declarado": "Concurso declarado",
+    "plazo_acreedores": "Plazo de los acreedores (art. 37 ter)",
+    "administracion_concursal": "Administración concursal nombrada",
+    "exoneracion_solicitada": "Exoneración solicitada",
+    "exoneracion_concedida": "Exoneración concedida",
+    "exoneracion_denegada": "Exoneración denegada",
+    "archivado": "Archivado"
+  },
+  "actuaciones": {
+    "presentacion_solicitud": {
+      "titulo": "Presentación de la solicitud de concurso",
+      "estado": "presentado",
+      "visibleCliente": true,
+      "mensajeCliente": "Hemos presentado en el juzgado su solicitud de concurso. Le avisaremos en cuanto el juzgado la admita."
+    },
+    "auto_declaracion": {
+      "titulo": "Auto de declaración de concurso",
+      "estado": "declarado",
+      "visibleCliente": true,
+      "mensajeCliente": "El juzgado ha declarado el concurso. Es el paso previo para pedir la cancelación de sus deudas."
+    },
+    "publicacion_edicto": {
+      "titulo": "Publicación del edicto en el BOE (concurso sin masa)",
+      "estado": "plazo_acreedores",
+      "visibleCliente": true,
+      "mensajeCliente": "Se ha publicado el edicto de su concurso. Ahora se abre un plazo para los acreedores; después pediremos la cancelación de sus deudas.",
+      "plazos": [
+        {
+          "clave": "plazo_acreedores_ac",
+          "titulo": "Acreedores con al menos el 5 % del pasivo pueden pedir administrador concursal",
+          "base": "art. 37 ter.1 TRLC",
+          "cantidad": 15,
+          "unidad": "habiles",
+          "parte": "tercero"
+        },
+        {
+          "clave": "solicitud_exoneracion",
+          "titulo": "Presentar la solicitud de exoneración del pasivo insatisfecho",
+          "base": "art. 501.1 TRLC (y art. 133.1 LEC, plazo encadenado)",
+          "cantidad": 10,
+          "unidad": "habiles",
+          "parte": "nuestro",
+          "encadenadoA": "plazo_acreedores_ac"
+        }
+      ]
+    },
+    "solicitud_administrador": {
+      "titulo": "Un acreedor solicita el nombramiento de administrador concursal",
+      "estado": "administracion_concursal",
+      "visibleCliente": true,
+      "mensajeCliente": "Un acreedor ha pedido que se nombre un administrador concursal. Es un trámite previsto en la ley; le explicaremos los siguientes pasos.",
+      "cancela": [
+        "solicitud_exoneracion"
+      ]
+    },
+    "informe_administrador": {
+      "titulo": "Informe del administrador concursal sin indicios para continuar",
+      "visibleCliente": true,
+      "mensajeCliente": "El administrador concursal ha emitido su informe. Ahora presentaremos la solicitud de cancelación de sus deudas.",
+      "plazos": [
+        {
+          "clave": "solicitud_exoneracion",
+          "titulo": "Presentar la solicitud de exoneración tras el informe del administrador",
+          "base": "art. 501.1 TRLC",
+          "cantidad": 10,
+          "unidad": "habiles",
+          "parte": "nuestro"
+        }
+      ]
+    },
+    "presentacion_exoneracion": {
+      "titulo": "Presentación de la solicitud de exoneración",
+      "estado": "exoneracion_solicitada",
+      "visibleCliente": true,
+      "mensajeCliente": "Hemos presentado la solicitud de cancelación de sus deudas (exoneración del pasivo insatisfecho).",
+      "cumple": [
+        "solicitud_exoneracion"
+      ]
+    },
+    "traslado_exoneracion": {
+      "titulo": "Traslado de la solicitud de exoneración a la administración concursal y a los acreedores",
+      "visibleCliente": false,
+      "plazos": [
+        {
+          "clave": "alegaciones_exoneracion",
+          "titulo": "Alegaciones de la administración concursal y los acreedores personados",
+          "base": "art. 501.4 TRLC",
+          "cantidad": 10,
+          "unidad": "habiles",
+          "parte": "tercero"
+        }
+      ]
+    },
+    "auto_exoneracion_concedida": {
+      "titulo": "Resolución que concede la exoneración",
+      "estado": "exoneracion_concedida",
+      "visibleCliente": true,
+      "mensajeCliente": "¡Enhorabuena! El juzgado ha concedido la cancelación de sus deudas. Le llamaremos para explicarle el alcance de la resolución."
+    },
+    "auto_exoneracion_denegada": {
+      "titulo": "Resolución que deniega la exoneración",
+      "estado": "exoneracion_denegada",
+      "visibleCliente": false
+    },
+    "notificacion": {
+      "titulo": "Notificación o requerimiento con plazo",
+      "visibleCliente": false,
+      "plazoLibre": true
+    },
+    "nota": {
+      "titulo": "Anotación",
+      "visibleCliente": false
+    },
+    "archivo": {
+      "titulo": "Archivo del procedimiento",
+      "estado": "archivado",
+      "visibleCliente": false
+    }
+  },
+  "estadosCliente": {
+    "preparado": "Preparando la presentación",
+    "presentado": "Solicitud presentada en el juzgado",
+    "declarado": "Concurso declarado por el juzgado",
+    "plazo_acreedores": "Plazo para los acreedores; después pediremos la cancelación de sus deudas",
+    "administracion_concursal": "Revisión por el administrador concursal",
+    "exoneracion_solicitada": "Cancelación de deudas solicitada; pendiente de resolución",
+    "exoneracion_concedida": "Cancelación de deudas concedida",
+    "exoneracion_denegada": "Pendiente de valoración por su abogado",
+    "archivado": "Procedimiento finalizado"
+  }
+}

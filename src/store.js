@@ -129,6 +129,181 @@ CREATE TABLE IF NOT EXISTS gasto_publicidad (
   importe_cent INTEGER NOT NULL,
   PRIMARY KEY (mes, origen)
 );
+
+CREATE TABLE IF NOT EXISTS expedientes (
+  id TEXT PRIMARY KEY,
+  lead_id TEXT NOT NULL REFERENCES leads(id),
+  encargo_id TEXT NOT NULL UNIQUE REFERENCES encargos(id),
+  token TEXT NOT NULL UNIQUE,
+  estado TEXT NOT NULL,
+  datos TEXT NOT NULL DEFAULT '{}',
+  creado TEXT NOT NULL,
+  actualizado TEXT NOT NULL,
+  documentacion_completa TEXT
+);
+
+CREATE TABLE IF NOT EXISTS documentos (
+  id TEXT PRIMARY KEY,
+  expediente_id TEXT NOT NULL REFERENCES expedientes(id),
+  clave TEXT NOT NULL,
+  obligatorio INTEGER NOT NULL,
+  estado TEXT NOT NULL,
+  motivo_rechazo TEXT,
+  revisado TEXT,
+  actualizado TEXT NOT NULL,
+  UNIQUE (expediente_id, clave)
+);
+
+CREATE TABLE IF NOT EXISTS archivos (
+  id TEXT PRIMARY KEY,
+  documento_id TEXT NOT NULL REFERENCES documentos(id),
+  nombre TEXT NOT NULL,
+  tipo_mime TEXT NOT NULL,
+  tamano INTEGER NOT NULL,
+  sha256 TEXT NOT NULL,
+  ruta TEXT NOT NULL,
+  iv TEXT NOT NULL,
+  etiqueta TEXT NOT NULL,
+  subido TEXT NOT NULL,
+  eliminado TEXT
+);
+CREATE INDEX IF NOT EXISTS archivos_documento ON archivos(documento_id);
+
+CREATE TABLE IF NOT EXISTS acreedores (
+  id TEXT PRIMARY KEY,
+  expediente_id TEXT NOT NULL REFERENCES expedientes(id),
+  nombre TEXT,
+  nif TEXT,
+  domicilio TEXT,
+  email TEXT,
+  tipo TEXT NOT NULL,
+  concepto TEXT,
+  importe_cent INTEGER,
+  vencimiento TEXT,
+  garantia TEXT NOT NULL DEFAULT 'ninguna',
+  garantia_detalle TEXT,
+  procedimiento_judicial TEXT,
+  clase TEXT,
+  notas TEXT,
+  cita TEXT,
+  archivo_id TEXT,
+  origen TEXT NOT NULL,
+  revisado INTEGER NOT NULL DEFAULT 0,
+  creado TEXT NOT NULL,
+  actualizado TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS acreedores_expediente ON acreedores(expediente_id);
+
+CREATE TABLE IF NOT EXISTS bienes (
+  id TEXT PRIMARY KEY,
+  expediente_id TEXT NOT NULL REFERENCES expedientes(id),
+  tipo TEXT NOT NULL,
+  descripcion TEXT,
+  ubicacion TEXT,
+  datos_registrales TEXT,
+  valor_adquisicion_cent INTEGER,
+  valor_mercado_cent INTEGER,
+  cargas TEXT,
+  cargas_cent INTEGER,
+  embargable INTEGER,
+  notas TEXT,
+  cita TEXT,
+  archivo_id TEXT,
+  origen TEXT NOT NULL,
+  revisado INTEGER NOT NULL DEFAULT 0,
+  creado TEXT NOT NULL,
+  actualizado TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS bienes_expediente ON bienes(expediente_id);
+
+CREATE TABLE IF NOT EXISTS preparaciones (
+  expediente_id TEXT PRIMARY KEY REFERENCES expedientes(id),
+  datos TEXT NOT NULL DEFAULT '{}',
+  listo TEXT,
+  actualizado TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS extracciones (
+  id TEXT PRIMARY KEY,
+  archivo_id TEXT NOT NULL REFERENCES archivos(id),
+  expediente_id TEXT NOT NULL REFERENCES expedientes(id),
+  estado TEXT NOT NULL,
+  creado TEXT NOT NULL,
+  terminado TEXT,
+  error TEXT,
+  resumen TEXT
+);
+CREATE INDEX IF NOT EXISTS extracciones_expediente ON extracciones(expediente_id);
+
+CREATE TABLE IF NOT EXISTS procedimientos (
+  id TEXT PRIMARY KEY,
+  expediente_id TEXT NOT NULL UNIQUE REFERENCES expedientes(id),
+  organo TEXT,
+  numero TEXT,
+  nig TEXT,
+  ccaa TEXT,
+  localidad TEXT,
+  festivos_locales TEXT NOT NULL DEFAULT '[]',
+  estado TEXT NOT NULL,
+  notas TEXT,
+  creado TEXT NOT NULL,
+  actualizado TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS actuaciones (
+  id TEXT PRIMARY KEY,
+  procedimiento_id TEXT NOT NULL REFERENCES procedimientos(id),
+  tipo TEXT NOT NULL,
+  fecha TEXT NOT NULL,
+  titulo TEXT NOT NULL,
+  detalle TEXT,
+  visible_cliente INTEGER NOT NULL DEFAULT 0,
+  creado TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS actuaciones_procedimiento ON actuaciones(procedimiento_id);
+
+CREATE TABLE IF NOT EXISTS plazos (
+  id TEXT PRIMARY KEY,
+  procedimiento_id TEXT NOT NULL REFERENCES procedimientos(id),
+  actuacion_id TEXT REFERENCES actuaciones(id),
+  clave TEXT NOT NULL,
+  titulo TEXT NOT NULL,
+  base TEXT,
+  parte TEXT NOT NULL,
+  dies_a_quo TEXT NOT NULL,
+  cantidad INTEGER NOT NULL,
+  unidad TEXT NOT NULL,
+  urgente INTEGER NOT NULL DEFAULT 0,
+  encadenado_a TEXT,
+  vence TEXT NOT NULL,
+  limite_presentacion TEXT,
+  avisos_calendario TEXT NOT NULL DEFAULT '[]',
+  estado TEXT NOT NULL,
+  cumplido TEXT,
+  notas TEXT,
+  alertas_enviadas TEXT NOT NULL DEFAULT '[]',
+  creado TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS plazos_estado ON plazos(estado, vence);
+
+CREATE TABLE IF NOT EXISTS cierres (
+  expediente_id TEXT PRIMARY KEY REFERENCES expedientes(id),
+  lead_id TEXT NOT NULL REFERENCES leads(id),
+  token TEXT NOT NULL UNIQUE,
+  codigo_referido TEXT NOT NULL UNIQUE,
+  motivo TEXT NOT NULL,
+  servicio_completado TEXT,
+  nps INTEGER,
+  comentario TEXT,
+  valorado TEXT,
+  resena_clic TEXT,
+  testimonio TEXT,
+  archivado TEXT,
+  conservar_hasta TEXT,
+  aviso_conservacion TEXT,
+  documentos_eliminados TEXT,
+  creado TEXT NOT NULL
+);
 `;
 
 export const ETAPAS = [
@@ -451,6 +626,276 @@ export class Store {
       this.db.prepare("UPDATE tareas SET estado = 'cancelada' WHERE lead_id = ? AND estado = 'pendiente'").run(id);
     }
     return filas.length;
+  }
+
+  // ---------- Expedientes y documentos (módulo 4) ----------
+
+  crearExpediente({ lead_id, encargo_id, estado = 'recogida_documentos' }) {
+    const ahora = this.ahora();
+    const expediente = { id: nuevoId(), token: nuevoToken() };
+    this.db.prepare('INSERT INTO expedientes (id, lead_id, encargo_id, token, estado, creado, actualizado) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(expediente.id, lead_id, encargo_id, expediente.token, estado, ahora, ahora);
+    return this.expediente(expediente.id);
+  }
+
+  expediente(id) {
+    return filaJson(this.db.prepare('SELECT * FROM expedientes WHERE id = ?').get(id), ['datos']);
+  }
+
+  expedientePorToken(token) {
+    return filaJson(this.db.prepare('SELECT * FROM expedientes WHERE token = ?').get(token), ['datos']);
+  }
+
+  expedientePorEncargo(encargoId) {
+    return filaJson(this.db.prepare('SELECT * FROM expedientes WHERE encargo_id = ?').get(encargoId), ['datos']);
+  }
+
+  expedienteDeLead(leadId) {
+    return filaJson(this.db.prepare('SELECT * FROM expedientes WHERE lead_id = ? ORDER BY creado DESC LIMIT 1').get(leadId), ['datos']);
+  }
+
+  actualizarExpediente(id, cambios) {
+    const columnas = Object.keys(cambios);
+    const valores = columnas.map((c) => (c === 'datos' ? JSON.stringify(cambios[c]) : cambios[c] ?? null));
+    this.db.prepare(`UPDATE expedientes SET ${columnas.map((c) => `${c} = ?`).join(', ')}, actualizado = ? WHERE id = ?`).run(...valores, this.ahora(), id);
+    return this.expediente(id);
+  }
+
+  /** Crea el documento si no existe; si existe, actualiza si es obligatorio. Devuelve el documento. */
+  asegurarDocumento(expedienteId, clave, obligatorio) {
+    const existente = this.db.prepare('SELECT * FROM documentos WHERE expediente_id = ? AND clave = ?').get(expedienteId, clave);
+    if (existente) {
+      const estado = existente.estado === 'no_aplica' ? 'pendiente' : existente.estado;
+      this.db.prepare('UPDATE documentos SET obligatorio = ?, estado = ?, actualizado = ? WHERE id = ?').run(obligatorio ? 1 : 0, estado, this.ahora(), existente.id);
+      return this.documento(existente.id);
+    }
+    const id = nuevoId();
+    this.db.prepare("INSERT INTO documentos (id, expediente_id, clave, obligatorio, estado, actualizado) VALUES (?, ?, ?, ?, 'pendiente', ?)")
+      .run(id, expedienteId, clave, obligatorio ? 1 : 0, this.ahora());
+    return this.documento(id);
+  }
+
+  documento(id) {
+    const fila = this.db.prepare('SELECT * FROM documentos WHERE id = ?').get(id);
+    return fila ? { ...fila, obligatorio: Boolean(fila.obligatorio) } : null;
+  }
+
+  documentosDeExpediente(expedienteId) {
+    return this.db.prepare('SELECT * FROM documentos WHERE expediente_id = ? ORDER BY rowid').all(expedienteId)
+      .map((f) => ({ ...f, obligatorio: Boolean(f.obligatorio) }));
+  }
+
+  actualizarDocumento(id, cambios) {
+    const columnas = Object.keys(cambios);
+    this.db.prepare(`UPDATE documentos SET ${columnas.map((c) => `${c} = ?`).join(', ')}, actualizado = ? WHERE id = ?`)
+      .run(...columnas.map((c) => cambios[c] ?? null), this.ahora(), id);
+    return this.documento(id);
+  }
+
+  crearArchivo(datos) {
+    const archivo = { id: nuevoId(), subido: this.ahora(), ...datos };
+    this.db.prepare('INSERT INTO archivos (id, documento_id, nombre, tipo_mime, tamano, sha256, ruta, iv, etiqueta, subido) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(archivo.id, archivo.documento_id, archivo.nombre, archivo.tipo_mime, archivo.tamano, archivo.sha256, archivo.ruta, archivo.iv, archivo.etiqueta, archivo.subido);
+    return this.archivo(archivo.id);
+  }
+
+  archivo(id) {
+    return this.db.prepare('SELECT * FROM archivos WHERE id = ?').get(id) ?? null;
+  }
+
+  archivosDeDocumento(documentoId) {
+    return this.db.prepare('SELECT * FROM archivos WHERE documento_id = ? AND eliminado IS NULL ORDER BY subido').all(documentoId);
+  }
+
+  bytesDeExpediente(expedienteId) {
+    return this.db.prepare(`SELECT COALESCE(SUM(a.tamano), 0) AS total FROM archivos a JOIN documentos d ON d.id = a.documento_id
+      WHERE d.expediente_id = ? AND a.eliminado IS NULL`).get(expedienteId).total;
+  }
+
+  marcarArchivoEliminado(id) {
+    this.db.prepare('UPDATE archivos SET eliminado = ? WHERE id = ?').run(this.ahora(), id);
+  }
+
+  // ---------- Preparación del expediente (módulo 5) ----------
+
+  /** Acreedores y bienes comparten forma: filas editables con origen, revisión y cita del documento. */
+  crearPartida(tabla, expedienteId, datos) {
+    if (!['acreedores', 'bienes'].includes(tabla)) throw new Error('Tabla no válida');
+    const ahora = this.ahora();
+    const fila = { id: nuevoId(), expediente_id: expedienteId, creado: ahora, actualizado: ahora, revisado: 0, ...datos };
+    const columnas = Object.keys(fila);
+    this.db.prepare(`INSERT INTO ${tabla} (${columnas.join(', ')}) VALUES (${columnas.map(() => '?').join(', ')})`)
+      .run(...columnas.map((c) => (typeof fila[c] === 'boolean' ? (fila[c] ? 1 : 0) : fila[c] ?? null)));
+    return this.partida(tabla, fila.id);
+  }
+
+  partida(tabla, id) {
+    if (!['acreedores', 'bienes'].includes(tabla)) throw new Error('Tabla no válida');
+    const fila = this.db.prepare(`SELECT * FROM ${tabla} WHERE id = ?`).get(id);
+    if (!fila) return null;
+    return { ...fila, revisado: Boolean(fila.revisado), ...(tabla === 'bienes' ? { embargable: fila.embargable == null ? null : Boolean(fila.embargable) } : {}) };
+  }
+
+  partidas(tabla, expedienteId) {
+    if (!['acreedores', 'bienes'].includes(tabla)) throw new Error('Tabla no válida');
+    return this.db.prepare(`SELECT id FROM ${tabla} WHERE expediente_id = ? ORDER BY creado, rowid`).all(expedienteId).map((f) => this.partida(tabla, f.id));
+  }
+
+  actualizarPartida(tabla, id, cambios) {
+    if (!['acreedores', 'bienes'].includes(tabla)) throw new Error('Tabla no válida');
+    const columnas = Object.keys(cambios);
+    if (columnas.length) {
+      this.db.prepare(`UPDATE ${tabla} SET ${columnas.map((c) => `${c} = ?`).join(', ')}, actualizado = ? WHERE id = ?`)
+        .run(...columnas.map((c) => (typeof cambios[c] === 'boolean' ? (cambios[c] ? 1 : 0) : cambios[c] ?? null)), this.ahora(), id);
+    }
+    return this.partida(tabla, id);
+  }
+
+  borrarPartida(tabla, id) {
+    if (!['acreedores', 'bienes'].includes(tabla)) throw new Error('Tabla no válida');
+    this.db.prepare(`DELETE FROM ${tabla} WHERE id = ?`).run(id);
+  }
+
+  preparacion(expedienteId) {
+    const fila = this.db.prepare('SELECT * FROM preparaciones WHERE expediente_id = ?').get(expedienteId);
+    return fila ? { ...fila, datos: JSON.parse(fila.datos) } : { expediente_id: expedienteId, datos: {}, listo: null };
+  }
+
+  guardarPreparacion(expedienteId, { datos, listo }) {
+    const actual = this.preparacion(expedienteId);
+    this.db.prepare(`INSERT INTO preparaciones (expediente_id, datos, listo, actualizado) VALUES (?, ?, ?, ?)
+      ON CONFLICT(expediente_id) DO UPDATE SET datos = excluded.datos, listo = excluded.listo, actualizado = excluded.actualizado`)
+      .run(expedienteId, JSON.stringify(datos ?? actual.datos), listo === undefined ? actual.listo : listo, this.ahora());
+    return this.preparacion(expedienteId);
+  }
+
+  crearExtraccion(archivoId, expedienteId) {
+    const id = nuevoId();
+    this.db.prepare("INSERT INTO extracciones (id, archivo_id, expediente_id, estado, creado) VALUES (?, ?, ?, 'pendiente', ?)").run(id, archivoId, expedienteId, this.ahora());
+    return this.extraccion(id);
+  }
+
+  extraccion(id) {
+    return filaJson(this.db.prepare('SELECT * FROM extracciones WHERE id = ?').get(id), ['resumen']);
+  }
+
+  extraccionesDeExpediente(expedienteId) {
+    return this.db.prepare('SELECT * FROM extracciones WHERE expediente_id = ? ORDER BY creado').all(expedienteId).map((f) => filaJson(f, ['resumen']));
+  }
+
+  terminarExtraccion(id, { estado, error = null, resumen = null }) {
+    this.db.prepare('UPDATE extracciones SET estado = ?, error = ?, resumen = ?, terminado = ? WHERE id = ?')
+      .run(estado, error, resumen == null ? null : JSON.stringify(resumen), this.ahora(), id);
+    return this.extraccion(id);
+  }
+
+  // ---------- Seguimiento procesal (módulo 6) ----------
+
+  crearProcedimiento(datos) {
+    const ahora = this.ahora();
+    const id = nuevoId();
+    this.db.prepare(`INSERT INTO procedimientos (id, expediente_id, organo, numero, nig, ccaa, localidad, festivos_locales, estado, notas, creado, actualizado)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, datos.expediente_id, datos.organo ?? null, datos.numero ?? null, datos.nig ?? null,
+      datos.ccaa ?? null, datos.localidad ?? null, JSON.stringify(datos.festivos_locales ?? []), datos.estado ?? 'preparado', datos.notas ?? null, ahora, ahora);
+    return this.procedimiento(id);
+  }
+
+  procedimiento(id) {
+    return filaJson(this.db.prepare('SELECT * FROM procedimientos WHERE id = ?').get(id), ['festivos_locales']);
+  }
+
+  procedimientoDeExpediente(expedienteId) {
+    return filaJson(this.db.prepare('SELECT * FROM procedimientos WHERE expediente_id = ?').get(expedienteId), ['festivos_locales']);
+  }
+
+  actualizarProcedimiento(id, cambios) {
+    const columnas = Object.keys(cambios);
+    const valores = columnas.map((c) => (c === 'festivos_locales' ? JSON.stringify(cambios[c]) : cambios[c] ?? null));
+    this.db.prepare(`UPDATE procedimientos SET ${columnas.map((c) => `${c} = ?`).join(', ')}, actualizado = ? WHERE id = ?`).run(...valores, this.ahora(), id);
+    return this.procedimiento(id);
+  }
+
+  crearActuacion(datos) {
+    const id = nuevoId();
+    this.db.prepare('INSERT INTO actuaciones (id, procedimiento_id, tipo, fecha, titulo, detalle, visible_cliente, creado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(id, datos.procedimiento_id, datos.tipo, datos.fecha, datos.titulo, datos.detalle ?? null, datos.visible_cliente ? 1 : 0, this.ahora());
+    return this.actuacion(id);
+  }
+
+  actuacion(id) {
+    const fila = this.db.prepare('SELECT * FROM actuaciones WHERE id = ?').get(id);
+    return fila ? { ...fila, visible_cliente: Boolean(fila.visible_cliente) } : null;
+  }
+
+  actuacionesDeProcedimiento(procedimientoId) {
+    return this.db.prepare('SELECT * FROM actuaciones WHERE procedimiento_id = ? ORDER BY fecha, creado').all(procedimientoId)
+      .map((f) => ({ ...f, visible_cliente: Boolean(f.visible_cliente) }));
+  }
+
+  crearPlazo(datos) {
+    const id = nuevoId();
+    this.db.prepare(`INSERT INTO plazos (id, procedimiento_id, actuacion_id, clave, titulo, base, parte, dies_a_quo, cantidad, unidad, urgente, encadenado_a,
+      vence, limite_presentacion, avisos_calendario, estado, notas, creado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      id, datos.procedimiento_id, datos.actuacion_id ?? null, datos.clave, datos.titulo, datos.base ?? null, datos.parte, datos.dies_a_quo, datos.cantidad,
+      datos.unidad, datos.urgente ? 1 : 0, datos.encadenado_a ?? null, datos.vence, datos.limite_presentacion ?? null,
+      JSON.stringify(datos.avisos_calendario ?? []), datos.estado ?? 'pendiente', datos.notas ?? null, this.ahora(),
+    );
+    return this.plazo(id);
+  }
+
+  plazo(id) {
+    const fila = filaJson(this.db.prepare('SELECT * FROM plazos WHERE id = ?').get(id), ['avisos_calendario', 'alertas_enviadas']);
+    return fila ? { ...fila, urgente: Boolean(fila.urgente) } : null;
+  }
+
+  plazosDeProcedimiento(procedimientoId) {
+    return this.db.prepare('SELECT id FROM plazos WHERE procedimiento_id = ? ORDER BY vence, creado').all(procedimientoId).map((f) => this.plazo(f.id));
+  }
+
+  plazosPendientes() {
+    return this.db.prepare("SELECT id FROM plazos WHERE estado = 'pendiente' ORDER BY vence").all().map((f) => this.plazo(f.id));
+  }
+
+  actualizarPlazo(id, cambios) {
+    const columnas = Object.keys(cambios);
+    const valores = columnas.map((c) => (['avisos_calendario', 'alertas_enviadas'].includes(c) ? JSON.stringify(cambios[c]) : typeof cambios[c] === 'boolean' ? (cambios[c] ? 1 : 0) : cambios[c] ?? null));
+    this.db.prepare(`UPDATE plazos SET ${columnas.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`).run(...valores, id);
+    return this.plazo(id);
+  }
+
+  // ---------- Cierre, valoraciones y recomendaciones (módulo 7) ----------
+
+  crearCierre({ expediente_id, lead_id, motivo, servicio_completado = null }) {
+    this.db.prepare(`INSERT INTO cierres (expediente_id, lead_id, token, codigo_referido, motivo, servicio_completado, creado)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`).run(expediente_id, lead_id, nuevoToken(), nuevoToken(6).replace(/[-_]/g, 'x'), motivo, servicio_completado, this.ahora());
+    return this.cierre(expediente_id);
+  }
+
+  cierre(expedienteId) {
+    return filaJson(this.db.prepare('SELECT * FROM cierres WHERE expediente_id = ?').get(expedienteId), ['testimonio']);
+  }
+
+  cierrePorToken(token) {
+    return filaJson(this.db.prepare('SELECT * FROM cierres WHERE token = ?').get(token), ['testimonio']);
+  }
+
+  cierrePorCodigo(codigo) {
+    return filaJson(this.db.prepare('SELECT * FROM cierres WHERE codigo_referido = ?').get(codigo), ['testimonio']);
+  }
+
+  cierres() {
+    return this.db.prepare('SELECT * FROM cierres ORDER BY creado DESC').all().map((f) => filaJson(f, ['testimonio']));
+  }
+
+  actualizarCierre(expedienteId, cambios) {
+    const columnas = Object.keys(cambios);
+    const valores = columnas.map((c) => (c === 'testimonio' ? JSON.stringify(cambios[c]) : cambios[c] ?? null));
+    this.db.prepare(`UPDATE cierres SET ${columnas.map((c) => `${c} = ?`).join(', ')} WHERE expediente_id = ?`).run(...valores, expedienteId);
+    return this.cierre(expedienteId);
+  }
+
+  leadsConReferido(codigo) {
+    return this.db.prepare("SELECT * FROM leads WHERE json_extract(atribucion, '$.ref') = ?").all(codigo).map(filaLead);
   }
 
   cerrar() {

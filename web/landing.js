@@ -12,7 +12,7 @@
 
   const parametros = new URLSearchParams(location.search);
   const atribucion = {};
-  for (const clave of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid']) {
+  for (const clave of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid', 'ref']) {
     if (parametros.get(clave)) atribucion[clave] = parametros.get(clave);
   }
   atribucion.pagina = location.pathname;
