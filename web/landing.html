@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ley de Segunda Oportunidad · {{despacho}}</title>
+<meta name="description" content="Consulta de diagnóstico gratuita por videollamada para saber si su caso cumple los requisitos de la Ley de Segunda Oportunidad. Atendemos en toda España.">
+<link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+<header class="cabecera"><a class="marca" href="/">{{despacho}}</a></header>
+<main class="contenedor">
+  <section class="heroe">
+    <h1>¿Las deudas no le dejan vivir con tranquilidad?</h1>
+    <p>La Ley de Segunda Oportunidad permite a las personas de buena fe pedir al juzgado la cancelación de sus deudas. En una consulta gratuita por videollamada le explicamos, con total confidencialidad, si su caso cumple los requisitos y cuánto costaría.</p>
+    <p><a class="boton" href="#cuestionario">Ver si mi caso encaja</a></p>
+  </section>
+
+  <ol class="pasos">
+    <li><strong>Responda 10 preguntas</strong><br>Datos aproximados, sin documentos. Le lleva dos minutos.</li>
+    <li><strong>Elija día y hora</strong><br>Consulta de diagnóstico gratuita por videollamada, desde cualquier lugar de España.</li>
+    <li><strong>Decida con toda la información</strong><br>Viabilidad, deudas que pueden y no pueden cancelarse, precio cerrado y pago en cuotas.</li>
+  </ol>
+
+  <section class="tarjeta">
+    <h2>Lo que debe saber antes</h2>
+    <ul>
+      <li>La decisión final la toma el juzgado: ningún abogado puede garantizarle el resultado.</li>
+      <li>Hay deudas que la ley no permite cancelar, como las pensiones de alimentos, y otras que solo se cancelan en parte, como las de Hacienda y la Seguridad Social.</li>
+      <li>Es necesario actuar de buena fe y no tener ciertas condenas o sanciones graves recientes.</li>
+    </ul>
+  </section>
+
+  <section class="tarjeta" id="cuestionario">
+    <h2>Cuestionario de viabilidad</h2>
+    <form id="form-lead" novalidate>
+      <div class="rejilla">
+        <label class="campo">Nombre y apellidos<input name="nombre" autocomplete="name" required maxlength="120"></label>
+        <label class="campo">Teléfono móvil (WhatsApp)<input name="telefono" type="tel" autocomplete="tel" required maxlength="20"></label>
+        <label class="campo">Correo electrónico<input name="email" type="email" autocomplete="email" maxlength="254"></label>
+        <label class="campo">Provincia<select name="provincia" required><option value="">Elija…</option></select></label>
+      </div>
+
+      <fieldset><legend>¿De quién son las deudas?</legend>
+        <div class="opciones">
+          <label><input type="radio" name="tipo_deudor" value="particular" required> Mías, como particular</label>
+          <label><input type="radio" name="tipo_deudor" value="autonomo"> Soy o fui autónomo</label>
+          <label><input type="radio" name="tipo_deudor" value="sociedad"> De una sociedad</label>
+        </div>
+      </fieldset>
+
+      <div class="rejilla">
+        <label class="campo">Deuda total aproximada (sin contar la hipoteca)
+          <select name="deuda_total" required>
+            <option value="">Elija…</option>
+            <option value="4000">Menos de 6.000 €</option>
+            <option value="10000">Entre 6.000 y 15.000 €</option>
+            <option value="22000">Entre 15.000 y 30.000 €</option>
+            <option value="45000">Entre 30.000 y 60.000 €</option>
+            <option value="80000">Más de 60.000 €</option>
+          </select>
+        </label>
+        <label class="campo">¿A cuántos bancos, financieras o acreedores debe?
+          <select name="num_acreedores" required>
+            <option value="">Elija…</option>
+            <option value="1">1</option>
+            <option value="2">2 o 3</option>
+            <option value="5">Entre 4 y 6</option>
+            <option value="8">Más de 6</option>
+          </select>
+        </label>
+        <label class="campo">Deuda con Hacienda
+          <select name="deuda_hacienda">
+            <option value="0">No tengo</option>
+            <option value="3000">Menos de 5.000 €</option>
+            <option value="10000">Entre 5.000 y 15.000 €</option>
+            <option value="25000">Más de 15.000 €</option>
+          </select>
+        </label>
+        <label class="campo">Deuda con la Seguridad Social
+          <select name="deuda_seguridad_social">
+            <option value="0">No tengo</option>
+            <option value="3000">Menos de 5.000 €</option>
+            <option value="10000">Entre 5.000 y 15.000 €</option>
+            <option value="25000">Más de 15.000 €</option>
+          </select>
+        </label>
+        <label class="campo">Ingresos mensuales aproximados
+          <select name="ingresos_mensuales">
+            <option value="">Prefiero no decirlo</option>
+            <option value="0">Sin ingresos</option>
+            <option value="700">Menos de 1.000 €</option>
+            <option value="1500">Entre 1.000 y 2.000 €</option>
+            <option value="2500">Más de 2.000 €</option>
+          </select>
+        </label>
+      </div>
+
+      <fieldset><legend>¿Tiene vivienda con hipoteca?</legend>
+        <div class="opciones"><label><input type="radio" name="vivienda_hipotecada" value="si"> Sí</label><label><input type="radio" name="vivienda_hipotecada" value="no"> No</label></div>
+      </fieldset>
+      <fieldset><legend>¿Debe pensiones de alimentos?</legend>
+        <div class="opciones"><label><input type="radio" name="deuda_alimentos" value="si"> Sí</label><label><input type="radio" name="deuda_alimentos" value="no"> No</label></div>
+      </fieldset>
+      <fieldset><legend>En los últimos 10 años, ¿ha sido condenado por delitos económicos o sancionado por infracciones muy graves de Hacienda o la Seguridad Social?</legend>
+        <div class="opciones"><label><input type="radio" name="antecedentes" value="si"> Sí</label><label><input type="radio" name="antecedentes" value="no"> No</label></div>
+      </fieldset>
+      <fieldset><legend>¿Ha cancelado deudas antes con la Ley de Segunda Oportunidad?</legend>
+        <div class="opciones"><label><input type="radio" name="exoneracion_previa" value="si"> Sí</label><label><input type="radio" name="exoneracion_previa" value="no"> No</label></div>
+      </fieldset>
+
+      <label class="casilla"><input type="checkbox" name="acepta_privacidad" required> <span>He leído la <a href="/privacidad" target="_blank">política de privacidad</a> y acepto que traten mis datos para estudiar mi consulta.</span></label>
+      <label class="casilla"><input type="checkbox" name="acepta_comunicaciones"> <span>Acepto recibir recordatorios por WhatsApp o correo si no reservo la consulta. Puedo darme de baja respondiendo BAJA.</span></label>
+
+      <p class="estado" id="estado-lead" role="status"></p>
+      <button class="boton ancho" type="submit">Ver si mi caso encaja</button>
+    </form>
+    <div id="resultado" class="oculto"></div>
+  </section>
+
+  <p class="nota">{{despacho}} · {{titular}}, colegiado/a n.º {{numeroColegiado}} del {{colegio}}.</p>
+</main>
+<footer class="pie"><a href="/privacidad">Privacidad</a></footer>
+<script src="/static/landing.js" defer></script>
+</body>
+</html>

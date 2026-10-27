@@ -1,0 +1,12 @@
+{
+  "_comentario": "Reglas del semáforo de cualificación. Los umbrales comerciales son decisión del despacho; los límites legales proceden del TRLC (RDL 1/2020) y deben revisarse si cambia la ley. Los casos rojos nunca se descartan automáticamente: reciben un mensaje neutro y los revisa un abogado.",
+  "deudaMinimaEuros": 6000,
+  "acreedoresMinimos": 2,
+  "porcentajeMinimoExonerable": 50,
+  "limiteExoneracionPublica": {
+    "_base": "art. 489.1.5º TRLC: hasta 10.000 € por deudor para AEAT y lo mismo para Seguridad Social; íntegros los primeros 5.000 € y el 50 % a partir de esa cifra.",
+    "tramoIntegroEuros": 5000,
+    "porcentajeTramoSiguiente": 50,
+    "maximoEuros": 10000
+  }
+}

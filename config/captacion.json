@@ -1,0 +1,36 @@
+{
+  "_comentario": "Correspondencia entre los nombres de los campos del formulario instantáneo de Meta y los campos internos. Ajusta las claves de la izquierda a los nombres que pongas a las preguntas en Meta.",
+  "camposMeta": {
+    "full_name": "nombre",
+    "phone_number": "telefono",
+    "email": "email",
+    "province": "provincia",
+    "provincia": "provincia",
+    "tipo_deudor": "tipo_deudor",
+    "deuda_total": "deuda_total",
+    "numero_acreedores": "num_acreedores",
+    "deuda_hacienda": "deuda_hacienda",
+    "deuda_seguridad_social": "deuda_seguridad_social",
+    "deuda_alimentos": "deuda_alimentos",
+    "vivienda_hipotecada": "vivienda_hipotecada",
+    "antecedentes": "antecedentes",
+    "exoneracion_previa": "exoneracion_previa",
+    "ingresos_mensuales": "ingresos_mensuales",
+    "acepta_comunicaciones": "consentimiento_comunicaciones"
+  },
+  "seguimientos": {
+    "_comentario": "Minutos desde la entrada del lead para cada recordatorio si no ha reservado.",
+    "seguimiento_1": 180,
+    "seguimiento_2": 1440,
+    "seguimiento_3": 4320,
+    "marcarPerdidoTrasMinutos": 10080
+  },
+  "eventosMeta": {
+    "_comentario": "Nombre del evento que se envía a la API de Conversiones de Meta cuando el lead llega a cada etapa.",
+    "cualificado": "lead_cualificado",
+    "agendado": "consulta_agendada",
+    "asistio": "consulta_realizada",
+    "firmado": "encargo_firmado",
+    "cliente": "Purchase"
+  }
+}

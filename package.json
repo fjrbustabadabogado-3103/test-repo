@@ -1,0 +1,18 @@
+{
+  "name": "bustabad-lso-captacion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Captación, cualificación y contratación automatizadas para expedientes de Ley de Segunda Oportunidad (Bustabad Abogados)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/index.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/index.js",
+    "test": "node --disable-warning=ExperimentalWarning --test"
+  },
+  "dependencies": {
+    "fastify": "^5.12.7"
+  }
+}

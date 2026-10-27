@@ -1,0 +1,40 @@
+{
+  "_comentario": "Datos de identificación exigidos por el art. 48.1 del Estatuto General de la Abogacía (RD 135/2021). Sustituye todos los valores COMPLETAR antes de pasar a producción.",
+  "nombreComercial": "Bustabad Abogados",
+  "titular": {
+    "nombre": "COMPLETAR nombre y apellidos del abogado/a responsable",
+    "nif": "COMPLETAR",
+    "colegio": "COMPLETAR Ilustre Colegio de la Abogacía de ...",
+    "numeroColegiado": "COMPLETAR"
+  },
+  "sociedadProfesional": null,
+  "domicilioProfesional": "COMPLETAR dirección completa",
+  "telefono": "COMPLETAR",
+  "email": "fjrbustabad.abogado@gmail.com",
+  "web": "COMPLETAR https://...",
+  "protegerDatos": {
+    "contactoPrivacidad": "fjrbustabad.abogado@gmail.com",
+    "plazoConservacionLeadsMeses": 12
+  },
+  "honorarios": {
+    "ivaPorcentaje": 21,
+    "preciosIncluyenIva": true,
+    "diaCobroCuotas": 5,
+    "textoCostas": "En el procedimiento de exoneración del pasivo insatisfecho puede existir oposición de acreedores. Si se produjera una condena en costas, su importe se calcularía conforme a los criterios orientativos del Colegio y se informaría de su cuantía aproximada antes de cualquier actuación que pudiera generarla (art. 48.4 EGAE).",
+    "incluye": [
+      "Estudio de la documentación y diagnóstico de viabilidad.",
+      "Redacción y presentación de la solicitud de concurso de acreedores de persona natural con la memoria, el inventario y la relación de acreedores (art. 7 TRLC).",
+      "Solicitud de exoneración del pasivo insatisfecho y, en su caso, propuesta de plan de pagos (arts. 486 y ss. TRLC).",
+      "Seguimiento del procedimiento hasta la resolución sobre la exoneración en primera instancia."
+    ],
+    "noIncluye": [
+      "Recursos de apelación u otros recursos contra resoluciones judiciales.",
+      "Incidentes concursales, oposiciones o revocaciones promovidas por acreedores, que se presupuestarán aparte.",
+      "Honorarios y derechos del procurador, obligatorio según el art. 510 TRLC, que se indican separadamente como provisión de fondos.",
+      "Gastos de obtención de certificados y notas registrales."
+    ],
+    "textoImpago": "COMPLETAR (revisar por el abogado): En caso de impago de dos cuotas consecutivas, el despacho lo comunicará al cliente y le concederá un plazo de 15 días para regularizarlo. Transcurrido sin pago, el despacho podrá renunciar al encargo con la antelación necesaria para no causar indefensión, conforme a las normas deontológicas.",
+    "metodosPago": "Tarjeta bancaria o adeudo directo SEPA en la cuenta que indique el cliente.",
+    "validezPropuestaDias": 10
+  }
+}

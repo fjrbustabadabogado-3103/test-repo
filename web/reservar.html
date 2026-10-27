@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Reservar consulta</title>
+<link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+<header class="cabecera"><span class="marca">Reserva de consulta</span></header>
+<main class="contenedor">
+  <section class="tarjeta">
+    <h1 id="saludo">Elija el día y la hora de su consulta</h1>
+    <p class="subtitulo">Consulta de diagnóstico gratuita por videollamada. Horario peninsular de España.</p>
+    <div id="cita-actual" class="aviso oculto"></div>
+    <p class="estado" id="estado" role="status">Cargando horarios…</p>
+    <div class="dias" id="dias"></div>
+  </section>
+  <section class="tarjeta oculto" id="confirmacion">
+    <h2>Consulta confirmada</h2>
+    <p id="texto-confirmacion"></p>
+    <p><a class="boton" id="enlace-video" href="#" rel="noopener">Enlace de la videollamada</a> <a class="boton secundario" id="enlace-ics" href="#">Añadir a mi calendario</a></p>
+    <p class="nota">Le enviaremos un recordatorio el día anterior y una hora antes. Si necesita cambiar la hora, vuelva a este mismo enlace.</p>
+  </section>
+</main>
+<script src="/static/reservar.js" defer></script>
+</body>
+</html>

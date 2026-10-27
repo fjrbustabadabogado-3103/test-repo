@@ -1,0 +1,122 @@
+{
+  "_comentario": "Plantillas de mensajes. 'whatsapp' es el nombre de la plantilla aprobada en Meta y 'parametros' el orden de sus variables {{1}}, {{2}}... 'comercial': true exige consentimiento para comunicaciones (art. 21 LSSI). Todas las plantillas comerciales deben ofrecer la baja.",
+  "bienvenida": {
+    "comercial": false,
+    "asunto": "Hemos recibido su consulta",
+    "texto": "Hola {{nombre}}, soy del equipo de {{despacho}}. Hemos recibido su consulta sobre la Ley de Segunda Oportunidad. Puede elegir ahora mismo el día y la hora de su consulta de diagnóstico gratuita por videollamada aquí: {{enlace_reserva}}",
+    "whatsapp": "lso_bienvenida",
+    "parametros": ["nombre", "enlace_reserva"]
+  },
+  "revision_manual": {
+    "comercial": false,
+    "asunto": "Estamos revisando su consulta",
+    "texto": "Hola {{nombre}}, gracias por contactar con {{despacho}}. Un abogado va a revisar personalmente los datos de su consulta y le contestaremos lo antes posible.",
+    "whatsapp": "lso_revision",
+    "parametros": ["nombre"]
+  },
+  "seguimiento_1": {
+    "comercial": true,
+    "asunto": "¿Le ayudamos a reservar su consulta?",
+    "texto": "Hola {{nombre}}, todavía no ha reservado su consulta de diagnóstico. Solo le llevará un minuto: {{enlace_reserva}}. Si no desea recibir más mensajes, responda BAJA.",
+    "whatsapp": "lso_seguimiento_1",
+    "parametros": ["nombre", "enlace_reserva"]
+  },
+  "seguimiento_2": {
+    "comercial": true,
+    "asunto": "Su consulta sigue pendiente",
+    "texto": "Hola {{nombre}}, muchas personas tardan en dar el paso por vergüenza o por miedo. En la consulta analizamos su caso con total confidencialidad y sin compromiso: {{enlace_reserva}}. Responda BAJA para no recibir más mensajes.",
+    "whatsapp": "lso_seguimiento_2",
+    "parametros": ["nombre", "enlace_reserva"]
+  },
+  "seguimiento_3": {
+    "comercial": true,
+    "asunto": "Último recordatorio",
+    "texto": "Hola {{nombre}}, este es nuestro último mensaje. Si más adelante quiere estudiar su caso, puede reservar aquí: {{enlace_reserva}}. Responda BAJA para no recibir más mensajes.",
+    "whatsapp": "lso_seguimiento_3",
+    "parametros": ["nombre", "enlace_reserva"]
+  },
+  "cita_confirmada": {
+    "comercial": false,
+    "asunto": "Consulta confirmada",
+    "texto": "Hola {{nombre}}, su consulta está confirmada para el {{fecha_cita}}. Enlace de la videollamada: {{enlace_cita}}. Tenga a mano una lista aproximada de sus deudas y acreedores.",
+    "whatsapp": "lso_cita_confirmada",
+    "parametros": ["nombre", "fecha_cita", "enlace_cita"]
+  },
+  "recordatorio_24h": {
+    "comercial": false,
+    "asunto": "Recordatorio: su consulta es mañana",
+    "texto": "Hola {{nombre}}, le recordamos su consulta del {{fecha_cita}}. Enlace: {{enlace_cita}}. Si no puede asistir, cambie la hora aquí: {{enlace_reserva}}",
+    "whatsapp": "lso_recordatorio_24h",
+    "parametros": ["nombre", "fecha_cita", "enlace_cita", "enlace_reserva"]
+  },
+  "recordatorio_1h": {
+    "comercial": false,
+    "asunto": "Su consulta empieza en 1 hora",
+    "texto": "Hola {{nombre}}, su consulta empieza en una hora ({{fecha_cita}}). Entre aquí: {{enlace_cita}}",
+    "whatsapp": "lso_recordatorio_1h",
+    "parametros": ["nombre", "fecha_cita", "enlace_cita"]
+  },
+  "no_asistio_1": {
+    "comercial": true,
+    "asunto": "No hemos podido vernos",
+    "texto": "Hola {{nombre}}, le esperábamos en la consulta y no hemos podido conectar. Puede elegir otra hora aquí: {{enlace_reserva}}. Responda BAJA para no recibir más mensajes.",
+    "whatsapp": "lso_no_asistio_1",
+    "parametros": ["nombre", "enlace_reserva"]
+  },
+  "no_asistio_2": {
+    "comercial": true,
+    "asunto": "¿Reprogramamos su consulta?",
+    "texto": "Hola {{nombre}}, seguimos teniendo un hueco para estudiar su caso. Reserve aquí cuando le venga bien: {{enlace_reserva}}. Responda BAJA para no recibir más mensajes.",
+    "whatsapp": "lso_no_asistio_2",
+    "parametros": ["nombre", "enlace_reserva"]
+  },
+  "propuesta_enviada": {
+    "comercial": false,
+    "asunto": "Su hoja de encargo",
+    "texto": "Hola {{nombre}}, como hablamos en la consulta, aquí tiene su hoja de encargo con el precio y las cuotas. Puede revisarla y firmarla desde el móvil: {{enlace_encargo}}",
+    "whatsapp": "lso_propuesta",
+    "parametros": ["nombre", "enlace_encargo"]
+  },
+  "propuesta_recordatorio": {
+    "comercial": false,
+    "asunto": "Su hoja de encargo está pendiente de firma",
+    "texto": "Hola {{nombre}}, su hoja de encargo sigue pendiente de firma. Si tiene cualquier duda, responda a este mensaje. Enlace: {{enlace_encargo}}",
+    "whatsapp": "lso_propuesta_recordatorio",
+    "parametros": ["nombre", "enlace_encargo"]
+  },
+  "codigo_firma": {
+    "comercial": false,
+    "asunto": "Código para firmar su hoja de encargo",
+    "texto": "Su código para firmar la hoja de encargo de {{despacho}} es {{codigo}}. Caduca en 10 minutos. No lo comparta con nadie.",
+    "whatsapp": "lso_codigo_firma",
+    "parametros": ["codigo"]
+  },
+  "bienvenida_cliente": {
+    "comercial": false,
+    "asunto": "Bienvenido/a: empezamos con su expediente",
+    "texto": "Hola {{nombre}}, hemos recibido su pago y su expediente ya está abierto. En breve le enviaremos la lista de documentos que necesitamos. Gracias por su confianza.",
+    "whatsapp": "lso_bienvenida_cliente",
+    "parametros": ["nombre"]
+  },
+  "pago_fallido": {
+    "comercial": false,
+    "asunto": "No hemos podido cobrar su cuota",
+    "texto": "Hola {{nombre}}, no hemos podido cobrar la cuota {{concepto}} de {{importe}}. Puede pagarla aquí: {{enlace_pago}} o responder a este mensaje si necesita ayuda.",
+    "whatsapp": "lso_pago_fallido",
+    "parametros": ["nombre", "concepto", "importe", "enlace_pago"]
+  },
+  "aviso_equipo_lead": {
+    "comercial": false,
+    "asunto": "Nuevo lead {{semaforo}}: llamar ya",
+    "texto": "Nuevo lead {{semaforo}} ({{origen}}): {{nombre}}, tel. {{telefono}}, {{provincia}}. Deuda aprox.: {{deuda_total}}. Ficha: {{enlace_admin}}",
+    "whatsapp": "lso_aviso_equipo",
+    "parametros": ["semaforo", "nombre", "telefono", "enlace_admin"]
+  },
+  "aviso_equipo_evento": {
+    "comercial": false,
+    "asunto": "{{evento}}: {{nombre}}",
+    "texto": "{{evento}}: {{nombre}} (tel. {{telefono}}). Ficha: {{enlace_admin}}",
+    "whatsapp": "lso_aviso_evento",
+    "parametros": ["evento", "nombre", "enlace_admin"]
+  }
+}
