@@ -104,6 +104,19 @@ Si el lead responde por WhatsApp, se detienen los automatismos comerciales y se 
 | `captacion.json` | Correspondencia de campos del formulario de Meta, tiempos de seguimiento y nombres de los eventos que se envían a Meta. |
 | `documentos.json` | Documentos que se piden, cuándo (según el cuestionario o los datos del portal), cómo conseguir cada uno, límites de tamaño y frecuencia de recordatorios. |
 
+## Imagen de marca
+
+La página de captación, la reserva, el área del cliente y el panel usan la identidad de Bustabad Abogados: azul `#007396` (RGB 0, 115, 150) y blanco, con el icono de la B en la cabecera, el pie y la pestaña del navegador.
+
+| Fichero | Qué es | Qué hacer |
+|---|---|---|
+| `web/marca.svg` | Icono en blanco para la cabecera y el pie | Es una **aproximación** dibujada a partir del manual de marca. Sustituirlo por el SVG original del logotipo, en blanco. |
+| `web/favicon.svg` | Icono de la pestaña: la B en blanco sobre un círculo azul | Igual que el anterior. |
+| `web/fuentes/poppins-*.woff2` | Tipografía Poppins (licencia SIL Open Font, `OFL-Poppins.txt`) | Nada. Se sirve desde el propio dominio, sin llamadas a Google Fonts. |
+| `web/fuentes/sifonn-pro.woff2` | Tipografía corporativa Sifonn Pro, para los títulos y la marca | **No incluida.** Si la licencia del despacho permite usarla en web, copiar aquí el archivo con ese nombre exacto y reiniciar. Mientras no esté, los títulos usan Poppins. |
+
+Los colores están definidos como variables al principio de `web/estilos.css`.
+
 ## Integraciones
 
 ### Meta: formularios instantáneos + API de Conversiones
@@ -248,6 +261,7 @@ Para activar el botón de reseña, pon en `config/cierre.json` → `resenas.urlG
 - [ ] Generar `ARCHIVOS_CLAVE` (`openssl rand -base64 32`), guardarla a salvo y revisar los textos de `config/documentos.json` (sobre todo «cómo conseguirlo»).
 - [ ] Cargar en `config/calendario.json` los festivos autonómicos de cada año e indicar en cada procedimiento los festivos locales de la sede del juzgado.
 - [ ] Poner en `config/cierre.json` el enlace de reseña de la ficha de Google y confirmar el plazo de conservación.
+- [ ] Sustituir `web/marca.svg` y `web/favicon.svg` por el logotipo original y, si hay licencia web, añadir `web/fuentes/sifonn-pro.woff2`.
 - [ ] Decidir la firma: la actual es una firma electrónica simple reforzada con código de un solo uso y evidencias. Si se quiere más fuerza probatoria, integrar un prestador cualificado.
 
 ## Estructura
@@ -264,7 +278,7 @@ src/
   messaging/              WhatsApp Cloud API y correo (modo consola sin credenciales)
   jobs/worker.js          tareas programadas con reintentos
   metricas.js             embudo, tasas, velocidad de respuesta y coste por cliente
-web/                      páginas públicas y panel
+web/                      páginas públicas y panel, estilos, logotipo y fuentes
 config/                   reglas de negocio editables
 test/                     pruebas (node:test)
 scripts/                  ayudante de los archivos de arranque (Iniciar.command en Mac, Iniciar.bat en Windows)

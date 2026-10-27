@@ -1,5 +1,5 @@
 import Fastify from 'fastify';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Store, ETAPAS } from './store.js';
 import { loadConfig } from './config.js';
@@ -38,7 +38,10 @@ import { igualSeguro, aCentimos, normalizarTelefono, fechaLarga, escaparHtml } f
 
 const PAGINAS_ESTATICAS = { '/admin': 'admin.html', '/admin/expediente/:id': 'admin-expediente.html' };
 const JS = 'text/javascript; charset=utf-8';
-const ESTATICOS = { 'estilos.css': 'text/css; charset=utf-8', 'landing.js': JS, 'admin.js': JS, 'reservar.js': JS, 'encargo.js': JS, 'expediente.js': JS, 'admin-expediente.js': JS, 'valoracion.js': JS };
+const ESTATICOS = { 'estilos.css': 'text/css; charset=utf-8', 'landing.js': JS, 'admin.js': JS, 'reservar.js': JS, 'encargo.js': JS, 'expediente.js': JS, 'admin-expediente.js': JS, 'valoracion.js': JS,
+  'marca.svg': 'image/svg+xml', 'favicon.svg': 'image/svg+xml' };
+// Fuentes servidas desde el propio dominio (sin llamadas a terceros). sifonn-pro.woff2 es opcional: la aporta el despacho.
+const FUENTES = ['poppins-400.woff2', 'poppins-600.woff2', 'poppins-700.woff2', 'sifonn-pro.woff2'];
 const ETAPAS_MANUALES = ['contactado', 'cualificado', 'asistio', 'no_asistio', 'perdido', 'descartado', 'nuevo'];
 // Con hoja de encargo firmada, la etapa la gobiernan la firma, los pagos y el desistimiento.
 const ETAPAS_BLOQUEADAS = ['firmado', 'cliente', 'desistido'];
@@ -86,7 +89,8 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
     return cuerpo;
   });
 
-  const web = (archivo) => readFileSync(join(config.paths?.web ?? join(import.meta.dirname, '..', 'web'), archivo), 'utf8');
+  const dirWeb = config.paths?.web ?? join(import.meta.dirname, '..', 'web');
+  const web = (archivo) => readFileSync(join(dirWeb, archivo), 'utf8');
   const html = (reply, contenido) => reply.type('text/html; charset=utf-8').send(contenido);
 
   // ---------------- Páginas públicas ----------------
@@ -99,10 +103,21 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
     return html(reply, web('landing.html').replace(/\{\{(\w+)\}\}/g, (_, clave) => escaparHtml(valores[clave] ?? '')));
   });
 
+  const conSifonn = existsSync(join(dirWeb, 'fuentes', 'sifonn-pro.woff2'));
+  const fuenteSifonn = '@font-face { font-family: "Sifonn Pro"; font-weight: 400 700; font-display: swap; src: url("/static/fuentes/sifonn-pro.woff2") format("woff2"); }\n';
+
   app.get('/static/:archivo', async (req, reply) => {
     const tipo = ESTATICOS[req.params.archivo];
     if (!tipo) return reply.code(404).send('No encontrado');
-    return reply.type(tipo).header('Cache-Control', 'public, max-age=300').send(web(req.params.archivo));
+    const contenido = web(req.params.archivo);
+    return reply.type(tipo).header('Cache-Control', 'public, max-age=300')
+      .send(req.params.archivo === 'estilos.css' && conSifonn ? fuenteSifonn + contenido : contenido);
+  });
+
+  app.get('/static/fuentes/:archivo', async (req, reply) => {
+    const ruta = join(dirWeb, 'fuentes', req.params.archivo);
+    if (!FUENTES.includes(req.params.archivo) || !existsSync(ruta)) return reply.code(404).send('No encontrado');
+    return reply.type('font/woff2').header('Cache-Control', 'public, max-age=31536000, immutable').send(readFileSync(ruta));
   });
 
   app.get('/privacidad', async (req, reply) => html(reply, paginaPrivacidad(config)));

@@ -9,11 +9,12 @@ export function layout(config, titulo, cuerpo, { scripts = [] } = {}) {
 <meta name="robots" content="noindex">
 <title>${e(titulo)} · ${e(config.despacho.nombreComercial)}</title>
 <link rel="stylesheet" href="/static/estilos.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 </head>
 <body>
-<header class="cabecera"><a class="marca" href="/">${e(config.despacho.nombreComercial)}</a></header>
+<header class="cabecera"><a class="marca" href="/" aria-label="${e(config.despacho.nombreComercial)}"><img src="/static/marca.svg" alt="" width="42" height="42"><span class="marca-texto"><span class="marca-nombre">Bustabad</span><span class="marca-sub">Abogados</span></span></a></header>
 <main class="contenedor">${cuerpo}</main>
-<footer class="pie"><a href="/privacidad">Privacidad</a> · ${e(config.despacho.titular.colegio)}</footer>
+<footer class="pie"><span class="marca" aria-hidden="true"><img src="/static/marca.svg" alt="" width="42" height="42"><span class="marca-texto"><span class="marca-nombre">Bustabad</span><span class="marca-sub">Abogados</span></span></span><br><a href="/privacidad">Privacidad</a> · ${e(config.despacho.titular.colegio)}</footer>
 ${scripts.map((s) => `<script src="/static/${e(s)}" defer></script>`).join('')}
 </body>
 </html>`;

@@ -6,12 +6,14 @@
 <meta name="robots" content="noindex">
 <title>Panel del despacho</title>
 <link rel="stylesheet" href="/static/estilos.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 </head>
 <body>
-<header class="cabecera"><span class="marca">Panel del despacho · Segunda Oportunidad</span></header>
+<header class="cabecera"><a class="marca" href="/admin" aria-label="Bustabad Abogados, panel del despacho"><img src="/static/marca.svg" alt="" width="42" height="42"><span class="marca-texto"><span class="marca-nombre">Bustabad</span><span class="marca-sub">Abogados</span></span></a><span class="cabecera-titulo">Panel del despacho</span></header>
 <main class="contenedor ancho">
-  <section class="tarjeta" id="acceso">
-    <h1>Acceso</h1>
+  <section class="tarjeta acceso" id="acceso">
+    <img src="/static/marca.svg" alt="">
+    <h1>Acceso al panel</h1>
     <form id="form-acceso">
       <label class="campo">Token de administración<input name="token" type="password" autocomplete="current-password" required></label>
       <button class="boton" type="submit">Entrar</button>
