@@ -1,0 +1,12 @@
+.git
+.github
+.devcontainer
+node_modules
+data
+deploy
+test
+.env
+*.sqlite
+*.sqlite-*
+Iniciar.bat
+Iniciar.command

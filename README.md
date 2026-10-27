@@ -12,6 +12,8 @@ Aplicación que automatiza el negocio completo, en siete módulos:
 
 Sin credenciales funciona **entero en local**: los WhatsApp y correos se guardan en la bandeja de salida (tabla `salida`) y los pagos son simulados.
 
+**Para publicarla en un servidor con HTTPS, siga [DESPLIEGUE.md](DESPLIEGUE.md)** (Docker, certificado automático, copias de seguridad cifradas y restauración).
+
 ## Abrirla en un Mac con doble clic
 
 1. Instala **Node.js** (versión «LTS», 22 o superior) desde https://nodejs.org.
@@ -47,7 +49,8 @@ Requisitos: Node.js 22.13 o superior (usa el SQLite integrado de Node; no hay de
 npm install
 cp .env.example .env      # rellenar según la sección "Integraciones"
 npm start                 # http://localhost:3000
-npm test                  # 55 pruebas: reglas, agenda, pagos, firmas, documentos, preparación, plazos, cierre y flujo completo
+npm test                  # 61 pruebas: reglas, agenda, pagos, firmas, documentos, preparación, plazos, cierre, producción y flujo completo
+npm run comprobar         # qué falta para arrancar en producción (lee las variables del entorno)
 ```
 
 Las variables de entorno se leen del entorno del proceso. Para usar el fichero `.env` en local: `node --env-file=.env src/index.js`.
@@ -255,10 +258,10 @@ Para activar el botón de reseña, pon en `config/cierre.json` → `resenas.urlG
 
 - [ ] Completar `config/despacho.json` y **revisar la plantilla de la hoja de encargo** (`src/modules/contratacion/hoja-encargo.js`) y la política de privacidad (`src/paginas.js`). Son plantillas base, no sustituyen la revisión del abogado.
 - [ ] Revisar con un abogado el modelo de formulario de desistimiento frente al anexo I.B del TRLGDCU.
-- [ ] `NODE_ENV=production`, `ADMIN_TOKEN` y `APP_SECRET` largos y aleatorios, y `BASE_URL` con https.
-- [ ] Alojamiento en la UE, copias de seguridad diarias de `DB_PATH` y contratos de encargado del tratamiento.
+- [ ] Seguir [DESPLIEGUE.md](DESPLIEGUE.md): servidor en la UE con copias automáticas del proveedor, claves generadas con `deploy/crear-env.sh` y `npm run comprobar` sin problemas. La copia diaria cifrada de la base de datos ya va incluida.
+- [ ] Contratos de encargado del tratamiento con el alojamiento y cada proveedor.
 - [ ] Plantillas de WhatsApp aprobadas, webhooks verificados y un ciclo completo en modo test de Stripe.
-- [ ] Generar `ARCHIVOS_CLAVE` (`openssl rand -base64 32`), guardarla a salvo y revisar los textos de `config/documentos.json` (sobre todo «cómo conseguirlo»).
+- [ ] Guardar `ARCHIVOS_CLAVE` fuera del servidor (sin ella no se abren los documentos ni las copias) y revisar los textos de `config/documentos.json` (sobre todo «cómo conseguirlo»).
 - [ ] Cargar en `config/calendario.json` los festivos autonómicos de cada año e indicar en cada procedimiento los festivos locales de la sede del juzgado.
 - [ ] Poner en `config/cierre.json` el enlace de reseña de la ficha de Google y confirmar el plazo de conservación.
 - [ ] Sustituir `web/marca.svg` y `web/favicon.svg` por el logotipo original y, si hay licencia web, añadir `web/fuentes/sifonn-pro.woff2`.
@@ -281,9 +284,18 @@ src/
 web/                      páginas públicas y panel, estilos, logotipo y fuentes
 config/                   reglas de negocio editables
 test/                     pruebas (node:test)
-scripts/                  ayudante de los archivos de arranque (Iniciar.command en Mac, Iniciar.bat en Windows)
+scripts/                  arranque con doble clic, comprobación de producción y restauración de copias
+deploy/                   producción: docker-compose con Caddy (HTTPS), plantilla de .env y generador de claves
+Dockerfile                imagen de producción
+.github/workflows/        pruebas e imagen en cada cambio (GitHub Actions)
 ```
 
 ## Próximos pasos
 
-Los siete módulos del plan están construidos. Lo siguiente es ponerlo en producción: completar la configuración del despacho, conectar las cuentas reales (Meta, WhatsApp, Stripe, correo y, si se quiere, la API de Claude), cargar los festivos y probar un ciclo completo con datos de prueba antes de atender clientes reales.
+Los siete módulos del plan están construidos y el despliegue está preparado ([DESPLIEGUE.md](DESPLIEGUE.md)). Lo siguiente es:
+
+1. Contratar el servidor en la UE.
+2. Completar la configuración del despacho.
+3. Conectar las cuentas reales: Meta, WhatsApp, Stripe, correo y, si se quiere, la API de Claude.
+4. Cargar los festivos.
+5. Probar un ciclo completo con datos de prueba antes de atender clientes reales.
