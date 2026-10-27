@@ -31,10 +31,15 @@ export function limpiarNombre(nombre, ext) {
  * Almacén de documentos cifrados con AES-256-GCM. Cada archivo tiene su propio vector de inicialización
  * y etiqueta de autenticación, de modo que cualquier manipulación del fichero se detecta al descifrar.
  */
-export function crearAlmacen(config) {
-  const clave = Buffer.from(config.archivos.clave || '', 'base64').length === 32
+/** Clave AES-256 de ARCHIVOS_CLAVE; en desarrollo y pruebas, derivada de APP_SECRET. Cifra documentos y copias de seguridad. */
+export function claveCifrado(config) {
+  return Buffer.from(config.archivos.clave || '', 'base64').length === 32
     ? Buffer.from(config.archivos.clave, 'base64')
-    : createHash('sha256').update(`archivos:${config.appSecret}`).digest(); // solo desarrollo y pruebas
+    : createHash('sha256').update(`archivos:${config.appSecret}`).digest();
+}
+
+export function crearAlmacen(config) {
+  const clave = claveCifrado(config);
   const raiz = config.archivos.directorio;
 
   return {

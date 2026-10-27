@@ -1,0 +1,39 @@
+# Producción: la aplicación detrás de Caddy, que obtiene y renueva solo el certificado HTTPS.
+# Uso (desde esta carpeta): docker compose up -d --build
+services:
+  app:
+    build: ..
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      BASE_URL: https://${DOMINIO:?Indique DOMINIO en deploy/.env}
+    volumes:
+      - datos:/data
+    # Sin puertos publicados: solo se llega a la aplicación a través de Caddy.
+    logging:
+      driver: local
+      options: { max-size: 10m, max-file: "5" }
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMINIO: ${DOMINIO}
+      EMAIL_CERTIFICADOS: ${EMAIL_CERTIFICADOS:?Indique EMAIL_CERTIFICADOS en deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_datos:/data
+      - caddy_config:/config
+    logging:
+      driver: local
+      options: { max-size: 10m, max-file: "5" }
+
+volumes:
+  datos:
+  caddy_datos:
+  caddy_config:

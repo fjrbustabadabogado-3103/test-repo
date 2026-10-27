@@ -1,0 +1,16 @@
+{
+	email {$EMAIL_CERTIFICADOS}
+}
+
+{$DOMINIO} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	# Documentos de hasta 15 MB más margen; la aplicación aplica sus propios límites.
+	request_body {
+		max_size 20MB
+	}
+	reverse_proxy app:3000
+}

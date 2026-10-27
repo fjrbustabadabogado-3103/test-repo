@@ -9,6 +9,7 @@ import { localAUtc } from '../modules/cualificacion/agenda.js';
 import { sumarDiasIso } from '../modules/seguimiento/calendario.js';
 import { enviarMensajeCierre, avisarFinConservacion } from '../modules/cierre/cierre.js';
 import { sumarDias, sumarMinutos } from '../util.js';
+import { crearCopia } from '../copias.js';
 
 const MAX_INTENTOS = 6;
 
@@ -92,6 +93,14 @@ function crearManejadores(ctx) {
       return avisarFinConservacion(ctx, tarea);
     },
 
+    async copia_seguridad(tarea) {
+      // La siguiente se programa en el primer intento, antes de copiar: un fallo no interrumpe la serie diaria.
+      if (tarea.intentos === 0) ctx.store.programar('copia_seguridad', localAUtc(sumarDiasIso(hoyEnZona(ctx), 1), ctx.config.copias.hora, ctx.config.agenda.zona));
+      const { archivo, eliminadas } = crearCopia(ctx);
+      ctx.log.info?.(`Copia de seguridad ${archivo} (${eliminadas} antiguas eliminadas)`);
+      return archivo;
+    },
+
     async purga_rgpd() {
       const meses = ctx.config.despacho.protegerDatos.plazoConservacionLeadsMeses ?? 12;
       const antesDe = sumarDias(ctx.reloj(), -30 * meses).toISOString();
@@ -147,10 +156,20 @@ export function crearWorker(ctx) {
     despertar() {
       setImmediate(() => this.procesar().catch((e) => ctx.log.error?.(e)));
     },
+    /**
+     * Garantiza que las tareas diarias estén programadas. Si una agota sus reintentos (queda «fallida»),
+     * se vuelve a programar en la siguiente pasada en lugar de perderse hasta reiniciar la aplicación.
+     */
+    asegurarDiarias() {
+      const diarias = ['purga_rgpd', 'revisar_plazos', ...(ctx.config.copias?.activadas ? ['copia_seguridad'] : [])];
+      for (const tipo of diarias) if (!ctx.store.hayTareaPendiente(tipo)) ctx.store.programar(tipo, ctx.reloj());
+    },
     iniciar(intervaloMs) {
-      if (!ctx.store.hayTareaPendiente('purga_rgpd')) ctx.store.programar('purga_rgpd', ctx.reloj());
-      if (!ctx.store.hayTareaPendiente('revisar_plazos')) ctx.store.programar('revisar_plazos', ctx.reloj());
-      temporizador = setInterval(() => this.procesar().catch((e) => ctx.log.error?.(e)), intervaloMs);
+      this.asegurarDiarias();
+      temporizador = setInterval(() => {
+        this.asegurarDiarias();
+        this.procesar().catch((e) => ctx.log.error?.(e));
+      }, intervaloMs);
       temporizador.unref?.();
     },
     detener() {

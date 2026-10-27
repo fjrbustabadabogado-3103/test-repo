@@ -1,0 +1,34 @@
+name: Pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  imagen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir la imagen de producción
+        run: docker build -t lso-despacho .
+      - name: La imagen se niega a arrancar sin configuración de producción
+        run: |
+          if docker run --rm lso-despacho node --disable-warning=ExperimentalWarning src/index.js; then
+            echo "La imagen arrancó sin configuración de producción" >&2
+            exit 1
+          fi

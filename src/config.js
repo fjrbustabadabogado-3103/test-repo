@@ -28,6 +28,9 @@ export function loadConfig(env = process.env, overrides = {}) {
     port,
     baseUrl: (env.BASE_URL ?? urlPorDefecto).replace(/\/$/, ''),
     dbPath: env.DB_PATH ?? join(ROOT, 'data', 'crm.sqlite'),
+    // Proxies cuya cabecera X-Forwarded-For se acepta (IP real del cliente en las evidencias de firma). Por defecto, solo redes privadas,
+    // como la del proxy HTTPS de deploy/; así nadie puede falsear su IP desde internet.
+    trustProxy: env.TRUST_PROXY ?? 'loopback,linklocal,uniquelocal',
     adminToken: env.ADMIN_TOKEN || (produccion ? '' : 'dev-admin'),
     appSecret: env.APP_SECRET || (produccion ? '' : 'dev-secret'),
     intervaloWorkerMs: Number(env.WORKER_INTERVAL_MS ?? 15000),
@@ -75,8 +78,15 @@ export function loadConfig(env = process.env, overrides = {}) {
     },
     archivos: {
       directorio: env.ARCHIVOS_DIR ?? join(ROOT, 'data', 'archivos'),
-      // Clave AES-256 en base64 (32 bytes) para cifrar los documentos de los clientes.
+      // Clave AES-256 en base64 (32 bytes) para cifrar los documentos de los clientes y las copias de seguridad.
       clave: env.ARCHIVOS_CLAVE ?? '',
+    },
+    copias: {
+      // Copia diaria cifrada de la base de datos. Siempre activa en producción.
+      activadas: produccion || env.COPIAS === 'activadas',
+      directorio: env.COPIAS_DIR ?? join(dirname(env.DB_PATH ?? join(ROOT, 'data', 'crm.sqlite')), 'copias'),
+      hora: env.COPIAS_HORA ?? '03:00',
+      retencionDias: Number(env.COPIAS_RETENCION_DIAS ?? 30),
     },
     ...overrides,
   };
@@ -94,5 +104,22 @@ export function problemasProduccion(config) {
   if (config.meta.verifyToken && !config.meta.appSecret) problemas.push('META_APP_SECRET es obligatorio si se activa el webhook de Meta.');
   if (config.pagos.proveedor === 'stripe' && !config.pagos.stripeWebhookSecret) problemas.push('STRIPE_WEBHOOK_SECRET es obligatorio con Stripe.');
   if (Buffer.from(config.archivos.clave, 'base64').length !== 32) problemas.push('ARCHIVOS_CLAVE debe ser una clave de 32 bytes en base64 (openssl rand -base64 32).');
+  if (!config.whatsapp.token && !config.email.resendApiKey) problemas.push('No hay ningún canal de mensajería: configure WHATSAPP_TOKEN o RESEND_API_KEY (sin ellos los mensajes a los clientes no salen).');
+  if (config.equipo.whatsapp.length + config.equipo.email.length === 0) problemas.push('Indique EQUIPO_WHATSAPP o EQUIPO_EMAIL para recibir los avisos (leads nuevos, plazos, impagos).');
   return problemas;
+}
+
+/** Ajustes recomendados que no impiden arrancar, pero conviene revisar antes de abrir al público. */
+export function avisosProduccion(config) {
+  const avisos = [];
+  if (!config.whatsapp.token && config.email.resendApiKey) avisos.push('Sin WhatsApp (WHATSAPP_TOKEN): los mensajes saldrán solo por correo.');
+  if (config.whatsapp.token && !config.email.resendApiKey) avisos.push('Sin correo (RESEND_API_KEY): los mensajes saldrán solo por WhatsApp.');
+  if (config.email.resendApiKey && /example\.com/.test(config.email.from)) avisos.push('EMAIL_FROM sigue con la dirección de ejemplo.');
+  if (!config.meta.verifyToken) avisos.push('Webhook de Meta sin configurar (META_VERIFY_TOKEN): los leads de formularios instantáneos no entrarán solos.');
+  if (config.meta.verifyToken && !config.meta.datasetId) avisos.push('Sin META_DATASET_ID: no se envían conversiones a Meta para optimizar campañas.');
+  const sinFestivos = Object.entries(config.calendario.autonomicos ?? {}).filter(([, anios]) => Object.values(anios).some((v) => v === null)).map(([ccaa]) => ccaa);
+  if (sinFestivos.length) avisos.push(`Festivos autonómicos sin cargar en config/calendario.json (${sinFestivos.length} comunidades): los plazos se marcarán «verificar».`);
+  if (!config.cierre.resenas?.urlGoogle) avisos.push('Sin enlace de reseñas de Google en config/cierre.json.');
+  if (!config.copias.activadas) avisos.push('Copias de seguridad desactivadas.');
+  return avisos;
 }

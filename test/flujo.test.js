@@ -291,7 +291,7 @@ test('el panel exige token', async () => {
 
 test('páginas públicas responden con cabeceras de seguridad', async () => {
   const e = crearEntorno();
-  for (const url of ['/', '/privacidad', '/admin', '/static/estilos.css', '/static/landing.js']) {
+  for (const url of ['/', '/privacidad', '/admin', '/static/estilos.css', '/static/landing.js', '/health']) {
     const r = await e.app.inject({ url });
     assert.equal(r.statusCode, 200, url);
     assert.ok(r.headers['content-security-policy'], url);

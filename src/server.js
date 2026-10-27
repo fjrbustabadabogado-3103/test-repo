@@ -50,7 +50,7 @@ const ETAPAS_BLOQUEADAS = ['firmado', 'cliente', 'desistido'];
  * Construye la aplicación. Todas las dependencias externas se pueden inyectar (tests).
  */
 export function construirApp({ config = loadConfig(), store, reloj = () => new Date(), fetchImpl = fetch, mensajeria, pagos, almacen, ia, log } = {}) {
-  const app = Fastify({ logger: log === undefined ? { level: config.produccion ? 'info' : 'warn' } : log, trustProxy: true, bodyLimit: 256 * 1024 });
+  const app = Fastify({ logger: log === undefined ? { level: config.produccion ? 'info' : 'warn' } : log, trustProxy: config.trustProxy, bodyLimit: 256 * 1024 });
   const ctx = {
     config,
     reloj,
@@ -121,7 +121,11 @@ export function construirApp({ config = loadConfig(), store, reloj = () => new D
   });
 
   app.get('/privacidad', async (req, reply) => html(reply, paginaPrivacidad(config)));
-  app.get('/health', async () => ({ ok: true }));
+  // Comprobación de vida para Docker y monitores externos (sin registrar cada consulta).
+  app.get('/health', { logLevel: 'warn' }, async () => {
+    ctx.store.db.prepare('SELECT 1').get();
+    return { ok: true };
+  });
 
   // ---------------- Módulo 1 · Captación ----------------
 
