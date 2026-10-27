@@ -11,6 +11,10 @@
   --marca-clara: #e3f1f6;
   --marca-viva: #00a3cc;
   --sobre-marca: #ffffff;
+  /* Acento naranja para los botones de acción. Texto oscuro encima: contraste 6,4:1 (blanco daría 2,4:1, por debajo de WCAG AA). */
+  --acento: #ff8a1f;
+  --acento-hover: #f47a0b;
+  --sobre-acento: #0f2a33;
   --fondo: #f2f7f9;
   --superficie: #ffffff;
   --texto: #0f2a33;
@@ -62,6 +66,8 @@ h2 { font-size: 1.3rem; margin-top: 1.6em; }
 .cabecera-titulo { font-weight: 600; font-size: .95rem; padding: 6px 12px; border-radius: 999px; background: rgba(255, 255, 255, .14); }
 .cabecera a.cabecera-titulo { color: #fff; text-decoration: none; }
 .cabecera a.cabecera-titulo:hover { background: rgba(255, 255, 255, .24); }
+.cabecera a.cabecera-titulo.acento { background: var(--acento); color: var(--sobre-acento); }
+.cabecera a.cabecera-titulo.acento:hover { background: var(--acento-hover); }
 .pie { text-align: center; color: rgba(255, 255, 255, .85); font-size: .85rem; padding: 28px 16px; background: #003b4d; margin-top: 24px; }
 .pie a { color: #fff; }
 .pie .marca { margin-bottom: 10px; }
@@ -109,14 +115,15 @@ legend { font-weight: 600; font-size: .95rem; margin-bottom: 6px; }
 .casilla input { margin-top: 4px; width: 18px; height: 18px; flex: none; accent-color: var(--marca); }
 
 /* Botones */
-.boton { display: inline-block; border: 0; border-radius: 999px; padding: 13px 26px; font: inherit; font-weight: 700; color: #fff; background: #007396; cursor: pointer; text-decoration: none; box-shadow: 0 4px 14px rgba(0, 115, 150, .28); transition: background .15s, transform .15s; }
-.boton:hover { background: #005a75; transform: translateY(-1px); }
+.boton { display: inline-block; border: 0; border-radius: 999px; padding: 13px 26px; font: inherit; font-weight: 700; color: var(--sobre-acento); background: var(--acento); cursor: pointer; text-decoration: none; box-shadow: 0 4px 14px rgba(244, 122, 11, .32); transition: background .15s, transform .15s; }
+.boton:hover { background: var(--acento-hover); transform: translateY(-1px); }
+.boton:focus-visible { outline: 3px solid var(--marca); outline-offset: 2px; }
 .boton[disabled] { opacity: .6; cursor: wait; transform: none; }
-.boton.claro { background: #fff; color: #007396; box-shadow: 0 6px 20px rgba(0, 0, 0, .18); font-size: 1.05rem; padding: 15px 30px; }
-.boton.claro:hover { background: var(--marca-clara); color: #005a75; }
+.boton.grande { font-size: 1.08rem; padding: 15px 32px; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); }
+.heroe .boton:focus-visible { outline-color: #fff; }
 .boton.secundario { background: transparent; color: var(--marca); border: 1.5px solid var(--marca); box-shadow: none; }
 .boton.secundario:hover { background: var(--marca-clara); }
-.boton.peligro { background: var(--peligro); box-shadow: none; }
+.boton.peligro { background: var(--peligro); color: #fff; box-shadow: none; }
 .boton.pequeno { padding: 6px 14px; font-size: .85rem; box-shadow: none; }
 .boton.ancho { width: 100%; }
 

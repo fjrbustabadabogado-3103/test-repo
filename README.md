@@ -106,7 +106,7 @@ Si el lead responde por WhatsApp, se detienen los automatismos comerciales y se 
 
 ## Imagen de marca
 
-La página de captación, la reserva, el área del cliente y el panel usan la identidad de Bustabad Abogados: azul `#007396` (RGB 0, 115, 150) y blanco, con el icono de la B en la cabecera, el pie y la pestaña del navegador.
+La página de captación, la reserva, el área del cliente y el panel usan la identidad de Bustabad Abogados: azul `#007396` (RGB 0, 115, 150) y blanco, con el icono de la B en la cabecera, el pie y la pestaña del navegador. Los botones de acción usan un acento naranja (`#ff8a1f`) con el texto en azul muy oscuro: en blanco sobre ese naranja el contraste sería de 2,4:1, por debajo del mínimo de accesibilidad (WCAG AA, 4,5:1).
 
 | Fichero | Qué es | Qué hacer |
 |---|---|---|
